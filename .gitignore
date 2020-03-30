@@ -2,3 +2,7 @@
 controllers/ur_controller/__pycache__/
 
 controllers/.idea/
+
+worlds/.Ur_bin_picking.wbproj
+
+controllers/ur_controller/P6BinPicking

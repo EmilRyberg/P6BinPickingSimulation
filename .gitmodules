@@ -1,0 +1,3 @@
+[submodule "P6BinPicking"]
+	path = controllers/ur_controller/P6BinPicking
+	url = https://github.com/EmilRyberg/P6BinPicking.git

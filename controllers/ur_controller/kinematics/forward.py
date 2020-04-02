@@ -1,0 +1,37 @@
+import numpy as np
+
+from kinematics.kinematics import Kinematics
+
+
+class ForwardKinematics(Kinematics):
+    def __init__(self):
+        super().__init__()
+        self.BRX = np.array([[1, 0, 0, 0],
+                        [0, np.cos(-np.pi / 2), -np.sin(-np.pi / 2), 0],
+                        [0, np.sin(-np.pi / 2), np.cos(-np.pi / 2), 0],
+                        [0, 0, 0, 1]])
+        self.BRZ = np.array([[np.cos(np.pi), -np.sin(np.pi), 0, 0],
+                        [np.sin(np.pi), np.cos(np.pi), 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 1]])
+        self.TB0 = np.matmul(self.BRX, self.BRZ)
+        self.T0B = np.linalg.inv(self.TB0)
+    def compute_0_to_6_matrix(self, thetas):
+        T01 = self.compute_transformation_matrix(thetas[0], self.joint1_dh)
+        T12 = self.compute_transformation_matrix(thetas[1], self.joint2_dh)
+        T23 = self.compute_transformation_matrix(thetas[2], self.joint3_dh)
+        T34 = self.compute_transformation_matrix(thetas[3], self.joint4_dh)
+        T45 = self.compute_transformation_matrix(thetas[4], self.joint5_dh)
+        T56 = self.compute_transformation_matrix(thetas[5], self.joint6_dh)
+        T06 = np.matmul(np.matmul(np.matmul(np.matmul(np.matmul(T01, T12), T23), T34), T45), T56)
+        return T06
+
+    def computer_base_to_6_matrix(self, thetas):
+        T06 = np.matmul(self.TB0, self.compute_0_to_6_matrix(thetas))
+        return T06
+
+    def convert_T06_to_TB6(self, T06):
+        return np.matmul(self.TB0, T06)
+
+    def convert_TB6_to_T06(self, TB6):
+        return np.matmul(self.T0B, TB6)

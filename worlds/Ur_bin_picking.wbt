@@ -17,5 +17,6 @@ UR5e {
   controller "ur_controller"
 }
 Ball {
-  translation 0 0.0325 0.44
+  translation 0.73 0.0325 0.44
+  mass 0.1
 }

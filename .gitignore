@@ -6,3 +6,5 @@ controllers/.idea/
 worlds/.Ur_bin_picking.wbproj
 
 controllers/ur_controller/P6BinPicking
+
+controllers/ur_controller/kinematics/__pycache__/

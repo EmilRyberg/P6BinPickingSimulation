@@ -4,15 +4,8 @@
 #  from controller import Robot, Motor, DistanceSensor
 from controller import Robot
 import numpy as np
-try:
-    from controllers.ur_controller.kinematics import ForwardKinematics, InverseKinematics, DHParameters, InverseKinematicsSolution, InverseKinematicsSpecificSolution, InverseKinematicsShoulderSolution
-except Exception:
-    pass
-try:
-    from include.controller import Robot
-except:
-    pass
-from kinematics import ForwardKinematics, InverseKinematics, DHParameters, InverseKinematicsSolution, InverseKinematicsSpecificSolution, InverseKinematicsShoulderSolution
+from kinematics.inverse import InverseKinematics
+from kinematics.forward import ForwardKinematics
 
 # create the Robot instance.
 robot = Robot()
@@ -34,11 +27,12 @@ motor_sensors = [robot.getPositionSensor("shoulder_pan_joint_sensor"), robot.get
 
 for sensor in motor_sensors:
     sensor.enable(10)
-motors[0].setPosition(np.pi / 2)
-motors[1].setPosition(-np.pi / 3)
-motors[2].setPosition(np.pi / 4)
-motors[4].setPosition(np.pi / 2)
-motors[5].setPosition(np.pi / 4)
+#motors[0].setPosition(np.pi / 2)
+#motors[1].setPosition(-np.pi / 2)
+#motors[2].setPosition(-np.pi / 2)
+#motors[3].setPosition(np.pi / 2)
+#motors[4].setPosition(np.pi / 2)
+#motors[5].setPosition(np.pi / 4)
 #motors[0].setPosition(3.8338037491315133)
 first_run = True
 can_run = False
@@ -59,8 +53,22 @@ while robot.step(timestep) != -1:
                                          motor_sensors[5].getValue()])
         print("T06: ", T06)
         print("TB6: ", kin.convert_T06_to_TB6(T06))
+        goto_pos = np.array([[0, -1, 0, 0.73],
+                             [0, 0, -1, 0.07],
+                             [1, 0, 0, 0.44],
+                             [0, 0, 0, 1]])
+        #goto_pos2 = np.array([[ 0, 0, -1,  0.717],
+        #                        [0,  1, 0, 0.0627],
+        #                        [ 1,  0, 0, -0.133],
+        #                        [ 0, 0, 0, 1]])
+        goto_pos3 = np.array([[0, 0, 1, 0.917],
+                             [0, 1, 0, 0.0627],
+                             [-1, 0, 0, -0.133],
+                             [0, 0, 0, 1]])
+        T06_goto = kin.convert_TB6_to_T06(goto_pos)
+        print("T06 goto:" , T06_goto)
         inv_kin = InverseKinematics()
-        inverse_solution = inv_kin.compute_joint_angles(T06)
+        inverse_solution = inv_kin.compute_joint_angles(T06_goto, True)
         first_run = False
         can_run = False
         time_passed = 0
@@ -77,7 +85,7 @@ while robot.step(timestep) != -1:
             inv_index += 1
             can_run = False
             time_passed = 0
-            wait_time = 5000
+            wait_time = 4000
         elif inv_index == 1:
             if inverse_solution.solution_shoulder_left.is_valid_solution and inverse_solution.solution_shoulder_left.solution_elbow_down.is_valid_solution:
                 print("Showing shoulder left, elbow down:")

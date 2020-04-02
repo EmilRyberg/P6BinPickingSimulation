@@ -4,6 +4,14 @@
 #  from controller import Robot, Motor, DistanceSensor
 from controller import Robot
 import numpy as np
+try:
+    from controllers.ur_controller.kinematics import ForwardKinematics, InverseKinematics, DHParameters, InverseKinematicsSolution, InverseKinematicsSpecificSolution, InverseKinematicsShoulderSolution
+except Exception:
+    pass
+try:
+    from include.controller import Robot
+except:
+    pass
 from kinematics import ForwardKinematics, InverseKinematics, DHParameters, InverseKinematicsSolution, InverseKinematicsSpecificSolution, InverseKinematicsShoulderSolution
 
 # create the Robot instance.
@@ -91,6 +99,7 @@ while robot.step(timestep) != -1:
                 print("Showing shoulder right, elbow down:")
                 for i in range(6):
                     motors[i].setPosition(inverse_solution.solution_right_shoulder.solution_elbow_down.thetas[i])
+                    motors[i].setPosition
             inv_index += 1
             can_run = False
             time_passed = 0

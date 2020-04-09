@@ -5,8 +5,7 @@ from scipy.spatial.transform import Rotation, Slerp
 from utils import Utils
 
 class Trajectory:
-    def __init__(self, motors, motor_sensors, timestep):
-        self.motors = motors
+    def __init__(self, motor_sensors, timestep):
         self.motor_sensors = motor_sensors
         self.timestep = timestep
         self.joint_angles = [0]*6

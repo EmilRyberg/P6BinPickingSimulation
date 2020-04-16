@@ -23,8 +23,21 @@ RectangleArena {
 UR5e {
   translation -0.4 1 -0.4
   controller "ur_controller"
+  toolSlot [
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+      }
+      device [
+        RotationalMotor {
+        }
+      ]
+      endPoint gripper {
+      }
+    }
+  ]
 }
-Solid {
+DEF YellowBox Solid {
   translation 0 0.5 0
   children [
     Shape {
@@ -49,7 +62,7 @@ Solid {
     size 1 1 1
   }
 }
-Solid {
+DEF Bottom_Cover Solid {
   translation -0.02 1.08 0.16
   rotation 1 0 0 -1.5707953071795862
   children [
@@ -102,7 +115,7 @@ Solid {
     mass 0.5
   }
 }
-Solid {
+DEF PCB Solid {
   translation -0.1 1.14 -6.97908e-07
   rotation 1 0 0 1.5708
   scale 0.001 0.001 0.001
@@ -146,7 +159,7 @@ Solid {
   physics Physics {
   }
 }
-Solid {
+DEF White_Cover Solid {
   translation -0.04 1.19 0.07
   rotation -1 0 0 -1.5707953071795862
   children [
@@ -197,7 +210,7 @@ Solid {
   physics Physics {
   }
 }
-Solid {
+DEF Black_Cover Solid {
   translation -0.09 1.21 -0.0200006
   rotation 1 0 0 1.5708
   children [
@@ -249,7 +262,7 @@ Solid {
   physics Physics {
   }
 }
-Solid {
+DEF Blue_Cover Solid {
   translation -0.08 1.16 0.02
   rotation 1 0 0 1.5708
   children [
@@ -302,7 +315,7 @@ Solid {
     mass 0.3
   }
 }
-Solid {
+DEF Cardboard_Box Solid {
   translation 0 1.212 0.114998
   rotation 1 0 0 1.5708
   scale 0.3 0.3 0.3

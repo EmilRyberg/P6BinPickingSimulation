@@ -35,6 +35,7 @@ UR5e {
         }
       ]
       endPoint gripper {
+        bodyMass 1500000000
       }
     }
   ]

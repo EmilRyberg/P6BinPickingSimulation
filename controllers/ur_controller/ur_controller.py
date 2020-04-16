@@ -83,7 +83,7 @@ command_is_executing = False
 print_once_flag = True
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(('0.0.0.0', 2000))
+#server.bind(('localhost', 2000))
 server.listen()
 print("Waiting for connection")
 robot.step(1) # webots won't print without a step

@@ -10,3 +10,9 @@ controllers/ur_controller/P6BinPicking
 controllers/ur_controller/kinematics/__pycache__/
 
 .idea/
+
+utils/dataset/**/*
+utils/dataset_splitted/**/*
+vision/yolo/config/*
+vision/yolo/data/**/*
+vision/*.avi

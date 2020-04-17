@@ -1,18 +1,12 @@
 #VRML_OBJ R2020a utf8
-Solid {
+DEF Cardboard_Box Solid {
   translation 0 1.212 0.114998
   rotation 1 0 0 1.5708
   scale 0.3 0.3 0.3
   children [
     Shape {
       appearance PBRAppearance {
-        baseColorMap ImageTexture {
-          url [
-            "C:/Users/Gamer_000/Downloads/cardboard.jpg"
-          ]
-        }
         roughness 1
-        metalness 0
       }
       geometry IndexedFaceSet {
         coord Coordinate {

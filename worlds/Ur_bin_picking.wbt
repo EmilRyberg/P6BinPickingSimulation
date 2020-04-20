@@ -35,8 +35,8 @@ DEF cameraRobot Robot {
   controller "camera_controller"
 }
 Viewpoint {
-  orientation -0.31726066367501 0.8502297289258332 0.4200655655194748 1.9975980845193826
-  position 1.1339241969632468 2.5623372480246265 -0.3673048842136837
+  orientation -0.9964114816222868 0.07751435370817031 0.033995356454726885 0.7995751999586109
+  position 0.09582443790822859 2.874280872495702 1.4361173948221793
   followType "None"
 }
 TexturedBackground {
@@ -49,8 +49,93 @@ RectangleArena {
   floorSize 10 10
   floorTileSize 0.2 0.2
 }
+DEF marker_id1 Solid {
+  translation 0.1303 1 -0.4299
+  rotation 0 1 0 -1.5707953071795862
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColorMap ImageTexture {
+          url [
+            "../textures/id1.jpg"
+          ]
+        }
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.05 0.0001 0.05
+      }
+    }
+  ]
+  name "solid(2)"
+}
+DEF marker_id0 Solid {
+  translation -0.4009 1 0.0946
+  rotation 0 1 0 1.5708
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColorMap ImageTexture {
+          url [
+            "../textures/id0.jpg"
+          ]
+        }
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.05 0.0001 0.05
+      }
+    }
+  ]
+  name "solid(1)"
+}
+DEF marker_id2 Solid {
+  translation -0.1836 1 -0.4315
+  rotation 0 1 0 3.14159
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColorMap ImageTexture {
+          url [
+            "../textures/id2.jpg"
+          ]
+        }
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.05 0.0001 0.05
+      }
+    }
+  ]
+  name "solid(3)"
+}
+DEF marker_id3 Solid {
+  translation 0.1411 1 0.0987
+  rotation 0 1 0 1.5708
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColorMap ImageTexture {
+          url [
+            "../textures/id3.jpg"
+          ]
+        }
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.05 0.0001 0.05
+      }
+    }
+  ]
+  name "solid(4)"
+}
 UR5e {
-  translation -0.4 1 -0.4
+  translation -0.35 1 -0.35
+  rotation 0.8628559982596194 -0.35740699927911007 -0.35740699927911007 -1.7177753071795863
   controller "ur_controller"
   toolSlot [
     DEF suction Connector {
@@ -74,12 +159,13 @@ UR5e {
         }
       ]
       endPoint gripper {
+        rotation 1 1.326334481393194e-19 0 3.14159
       }
     }
   ]
 }
 DEF YellowBox Solid {
-  translation 0 0.5 0
+  translation -0.1 0.5 -0.12
   children [
     Shape {
       appearance PBRAppearance {
@@ -88,18 +174,18 @@ DEF YellowBox Solid {
         metalness 0
       }
       geometry Box {
-        size 1 1 1
+        size 0.8 1 0.8
       }
     }
   ]
   name "table"
   contactMaterial "table"
   boundingObject Box {
-    size 1 1 1
+    size 0.8 1 0.8
   }
 }
 DEF Bottom_Cover Solid {
-  translation -0.02 1.26 0.16
+  translation -0.16 1.26 -0.05
   rotation 1 0 0 -1.5707953071795862
   children [
     Connector {
@@ -160,7 +246,7 @@ DEF Bottom_Cover Solid {
   }
 }
 DEF White_Cover Solid {
-  translation -0.04 1.19 0.07
+  translation -0.110885 1.19 -0.167225
   rotation 0.9351130202419243 -0.25056300542381216 0.25056300542381216 1.63783
   children [
     Connector {
@@ -220,7 +306,7 @@ DEF White_Cover Solid {
   }
 }
 DEF Black_Cover Solid {
-  translation 0.0292694 1.1653 0.000531419
+  translation 0.0296995 1.16479 -0.169468
   rotation -0.09255960667941801 0.7050800508809896 0.7030610507352917 -2.9600753071795864
   children [
     Connector {
@@ -281,7 +367,7 @@ DEF Black_Cover Solid {
   }
 }
 DEF Blue_Cover Solid {
-  translation 0 1.3 0.12
+  translation -0.19 1.3 -0.17
   rotation 1 0 0 1.5708
   children [
     Connector {
@@ -342,7 +428,7 @@ DEF Blue_Cover Solid {
   }
 }
 DEF Cardboard_Box Solid {
-  translation 0 1.212 0.114998
+  translation -0.111 1.212 -0.097002
   rotation 1 0 0 1.5708
   scale 0.3 0.3 0.3
   children [
@@ -431,7 +517,7 @@ DEF Cardboard_Box Solid {
   translationStep 0.001
 }
 DEF PCB Solid {
-  translation 0.0489073 1.31725 0.0727955
+  translation -0.0917325 1.32181 -0.121626
   rotation 0.03197624581717933 0.9994882573773807 -0.0008620140175127586 0.6264856804852718
   children [
     Connector {

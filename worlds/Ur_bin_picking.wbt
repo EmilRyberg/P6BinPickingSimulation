@@ -11,8 +11,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation -0.004383063373959889 -0.8922325734057198 -0.4515548955656074 3.1264312380378008
-  position 0.047932595895455565 2.026529045658124 -0.5254684240852875
+  orientation -0.31726066367501 0.8502297289258332 0.4200655655194748 1.9975980845193826
+  position 1.1339241969632468 2.5623372480246265 -0.3673048842136837
   followType "None"
 }
 TexturedBackground {
@@ -35,9 +35,11 @@ UR5e {
       name "suction"
       type "active"
       autoLock TRUE
-      distanceTolerance 10
-      axisTolerance 0.5
-      rotationTolerance 3.1
+      distanceTolerance 0.1
+      axisTolerance 3.1
+      rotationTolerance 1.57
+      numberOfRotations 2
+      snap FALSE
     }
     HingeJoint {
       jointParameters HingeJointParameters {
@@ -76,6 +78,15 @@ DEF Bottom_Cover Solid {
   translation -0.02 1.26 0.16
   rotation 1 0 0 -1.5707953071795862
   children [
+    Connector {
+      translation 0.05 0.03 0
+      type "passive"
+      autoLock TRUE
+      distanceTolerance 0.1
+      axisTolerance 3.1
+      rotationTolerance 3.1
+      snap FALSE
+    }
     Shape {
       appearance PBRAppearance {
         baseColor 0.0392157 0.0392157 0.0392157
@@ -128,6 +139,15 @@ DEF White_Cover Solid {
   translation -0.04 1.19 0.07
   rotation 0.9351130202419243 -0.25056300542381216 0.25056300542381216 1.63783
   children [
+    Connector {
+      translation 0.05 0.03 0
+      type "passive"
+      autoLock TRUE
+      distanceTolerance 0.1
+      axisTolerance 3.1
+      rotationTolerance 3.1
+      snap FALSE
+    }
     Shape {
       appearance PBRAppearance {
         roughness 0.7
@@ -176,16 +196,17 @@ DEF White_Cover Solid {
   }
 }
 DEF Black_Cover Solid {
-  translation -0.33 1.02 0.24
-  rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 2.09
+  translation 0.0292694 1.1653 0.000531419
+  rotation -0.09255960667941801 0.7050800508809896 0.7030610507352917 -2.9600753071795864
   children [
     Connector {
       translation 0.05 0.03 0
       type "passive"
       autoLock TRUE
-      distanceTolerance 10
+      distanceTolerance 0.1
       axisTolerance 3
       rotationTolerance 3
+      snap FALSE
     }
     Shape {
       appearance PBRAppearance {
@@ -239,6 +260,15 @@ DEF Blue_Cover Solid {
   translation 0 1.3 0.12
   rotation 1 0 0 1.5708
   children [
+    Connector {
+      translation 0.06 0.03 0
+      type "passive"
+      autoLock TRUE
+      distanceTolerance 0.1
+      axisTolerance 3.1
+      rotationTolerance 3.1
+      snap FALSE
+    }
     Shape {
       appearance PBRAppearance {
         baseColor 0 0.27451 0.823529
@@ -380,6 +410,15 @@ DEF PCB Solid {
   translation 0.0489073 1.31725 0.0727955
   rotation 0.03197624581717933 0.9994882573773807 -0.0008620140175127586 0.6264856804852718
   children [
+    Connector {
+      translation 0.05 0 0
+      type "passive"
+      autoLock TRUE
+      distanceTolerance 0.1
+      axisTolerance 3.1
+      rotationTolerance 3.1
+      snap FALSE
+    }
     Shape {
       appearance PBRAppearance {
         baseColor 0.156863 0.529412 0

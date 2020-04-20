@@ -136,10 +136,12 @@ while robot.step(timestep) != -1:
     if current_task == "suction_on":
         suction.lock()
         current_task = "idle"
+        respond("done")
 
     if current_task == "suction_off":
         suction.unlock()
         current_task = "idle"
+        respond("done")
 
     if current_task == "movel":
         if not command_is_executing:

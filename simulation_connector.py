@@ -87,5 +87,5 @@ if __name__ == '__main__':
     #connector.get_image()
     #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
     #connector.movej([0,0,0,0,0,0], 1)
-    connector.suction_handler(1)
-    connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
+    #connector.suction_handler(1)
+    #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)

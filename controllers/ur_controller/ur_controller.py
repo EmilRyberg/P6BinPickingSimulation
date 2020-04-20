@@ -1,6 +1,7 @@
 """ur_controller controller."""
 
 from controller import Robot
+from controller import Connector
 import numpy as np
 from kinematics.inverse import InverseKinematics
 from kinematics.forward import ForwardKinematics
@@ -50,12 +51,14 @@ def respond(result, data = None):
 
 
 robot = Robot()
+suction = Connector("suction")
 timestep = int(robot.getBasicTimeStep())
 
 motors = [robot.getMotor("shoulder_pan_joint"), robot.getMotor("shoulder_lift_joint"), robot.getMotor("elbow_joint"),
           robot.getMotor("wrist_1_joint"), robot.getMotor("wrist_2_joint"), robot.getMotor("wrist_3_joint")]
 motor_sensors = [robot.getPositionSensor("shoulder_pan_joint_sensor"), robot.getPositionSensor("shoulder_lift_joint_sensor"), robot.getPositionSensor("elbow_joint_sensor"),
           robot.getPositionSensor("wrist_1_joint_sensor"), robot.getPositionSensor("wrist_2_joint_sensor"), robot.getPositionSensor("wrist_3_joint_sensor")]
+
 
 trajectory = Trajectory(motor_sensors, timestep)
 
@@ -83,7 +86,7 @@ command_is_executing = False
 print_once_flag = True
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#server.bind(('localhost', 2000))
+server.bind(('localhost', 2000))
 server.listen()
 print("Waiting for connection")
 robot.step(1) # webots won't print without a step
@@ -129,6 +132,14 @@ while robot.step(timestep) != -1:
                 command_is_executing = False
                 current_task = "idle"
                 respond("done")
+
+    if current_task == "suction_on":
+        suction.lock()
+        current_task = "idle"
+
+    if current_task == "suction_off":
+        suction.unlock()
+        current_task = "idle"
 
     if current_task == "movel":
         if not command_is_executing:

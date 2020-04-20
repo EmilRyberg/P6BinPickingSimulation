@@ -72,9 +72,20 @@ class SimulationConnector:
         pil_img = pimg.fromarray(np_img)
         pil_img.show()
 
+    def suction_handler(self, option):
+        if option == 1:
+            cmd = {"name" : "suction_on", "args" : {}}
+            self._execute_remote_command(cmd)
+        elif option == 0:
+            cmd = {"name" : "suction_off", "args" : {}}
+            self._execute_remote_command(cmd)
+        else:
+            raise Exception("wrong option for suction: " + option)
 
 if __name__ == '__main__':
     connector = SimulationConnector()
-    connector.get_image()
-    connector.movel([-0.13, 0.16, 0.7, 0.5, -1.5, 0.5], 0.3)
-    connector.movej([0,0,0,0,0,0], 1)
+    #connector.get_image()
+    #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
+    #connector.movej([0,0,0,0,0,0], 1)
+    connector.suction_handler(1)
+    connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)

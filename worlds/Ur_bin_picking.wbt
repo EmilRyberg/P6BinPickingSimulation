@@ -11,8 +11,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation 0.0025060425341796454 -0.883025914247333 -0.46931754124311054 3.153100424839414
-  position 0.06553995841787341 2.0508185672243022 -0.47389557531651283
+  orientation -0.004383063373959889 -0.8922325734057198 -0.4515548955656074 3.1264312380378008
+  position 0.047932595895455565 2.026529045658124 -0.5254684240852875
   followType "None"
 }
 TexturedBackground {
@@ -29,6 +29,16 @@ UR5e {
   translation -0.4 1 -0.4
   controller "ur_controller"
   toolSlot [
+    DEF suction Connector {
+      translation -0.005 0.08 -0.192
+      rotation 0 1 0 3.141592653589793
+      name "suction"
+      type "active"
+      autoLock TRUE
+      distanceTolerance 10
+      axisTolerance 0.5
+      rotationTolerance 3.1
+    }
     HingeJoint {
       jointParameters HingeJointParameters {
         axis 0 1 0
@@ -166,9 +176,17 @@ DEF White_Cover Solid {
   }
 }
 DEF Black_Cover Solid {
-  translation -0.09 1.19 -0.0200006
-  rotation 1 0 0 1.5708
+  translation -0.33 1.02 0.24
+  rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 2.09
   children [
+    Connector {
+      translation 0.05 0.03 0
+      type "passive"
+      autoLock TRUE
+      distanceTolerance 10
+      axisTolerance 3
+      rotationTolerance 3
+    }
     Shape {
       appearance PBRAppearance {
         baseColor 0 0 0
@@ -218,7 +236,7 @@ DEF Black_Cover Solid {
   }
 }
 DEF Blue_Cover Solid {
-  translation -0.08 1.16 0.02
+  translation 0 1.3 0.12
   rotation 1 0 0 1.5708
   children [
     Shape {

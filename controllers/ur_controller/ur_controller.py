@@ -2,6 +2,8 @@
 
 from controller import Robot
 from controller import Connector
+from controller import RangeFinder
+from controller import Camera
 import numpy as np
 from kinematics.inverse import InverseKinematics
 from kinematics.forward import ForwardKinematics
@@ -52,6 +54,8 @@ def respond(result, data = None):
 
 robot = Robot()
 suction = Connector("suction")
+
+
 timestep = int(robot.getBasicTimeStep())
 
 motors = [robot.getMotor("shoulder_pan_joint"), robot.getMotor("shoulder_lift_joint"), robot.getMotor("elbow_joint"),

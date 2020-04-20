@@ -10,6 +10,30 @@ WorldInfo {
     }
   ]
 }
+DEF cameraRobot Robot {
+  translation 0 3 0
+  rotation 1 0 0 -1.5707953071795862
+  children [
+    DEF cameraDepth RangeFinder {
+      rotation 1 0 0 4.692820414042842e-06
+      name "cameraDepth"
+      fieldOfView 0.698
+      width 1280
+      height 720
+      minRange 0.16
+      maxRange 3
+    }
+    DEF cameraRGB Camera {
+      name "cameraRGB"
+      fieldOfView 0.741
+      width 1920
+      height 1080
+      far 3
+    }
+  ]
+  name "cameraRobot"
+  controller "camera_controller"
+}
 Viewpoint {
   orientation -0.31726066367501 0.8502297289258332 0.4200655655194748 1.9975980845193826
   position 1.1339241969632468 2.5623372480246265 -0.3673048842136837

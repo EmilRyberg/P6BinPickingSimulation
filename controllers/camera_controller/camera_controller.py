@@ -54,20 +54,12 @@ cameraRGB = Camera("cameraRGB")
 cameraDepth = RangeFinder("cameraDepth")
 timestep = int(robot.getBasicTimeStep())
 
-cameraRGB.enable(timestep)
-cameraDepth.enable(timestep)
-
-
-first_run = True
-can_run = False
-
-time_passed = 0
-wait_time = 2000
-
 current_task = "idle"
 args = None
 command_is_executing = False
 print_once_flag = True
+rgb_enabled = False
+depth_enabled = False
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(('localhost', 2001))
@@ -79,7 +71,6 @@ print("Connected")
 
 x = threading.Thread(target=continous_timestep)
 x.start()
-
 
 # Main loop:
 # - perform simulation steps until Webots is stopping the controller
@@ -99,15 +90,27 @@ while robot.step(timestep) != -1:
             print_once_flag = True
 
     if current_task == "get_image":
-        np_img = cameraRGB.getImageArray()
-        respond("done", np_img)
-        current_task = "idle"
+        if not rgb_enabled:
+            cameraRGB.enable(timestep)
+            rgb_enabled = True
+        else:
+            np_img = np.array(cameraRGB.getImageArray(), dtype=np.uint8)
+            respond("done", np_img)
+            current_task = "idle"
+            cameraRGB.disable()
+            rgb_enabled = False
 
     if current_task == "get_depth":
-        np_dep = cameraDepth.getRangeImageArray()
-        respond("done", np_dep)
-        current_task = "idle"
+        if not depth_enabled:
+            cameraDepth.enable(timestep)
+            depth_enabled = True
+        else:
+            np_dep = np.array(cameraDepth.getRangeImageArray())
+            respond("done", np_dep)
+            current_task = "idle"
+            cameraDepth.disable()
+            depth_enabled = False
 
 
-#conn.close()
-print("Controller ended")
+conn.close()
+print("Camera controller ended")

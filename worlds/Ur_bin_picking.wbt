@@ -11,23 +11,23 @@ WorldInfo {
   ]
 }
 DEF cameraRobot Robot {
-  translation 0 3 0
-  rotation 1 0 0 -1.5707953071795862
+  translation -0.1 2 -0.15
+  rotation -0.999999999947359 8.636319999545375e-07 -1.0224299999461783e-05 1.57079
   children [
     DEF cameraDepth RangeFinder {
       rotation 1 0 0 4.692820414042842e-06
       name "cameraDepth"
       fieldOfView 0.698
-      width 1280
-      height 720
+      width 720
+      height 1280
       minRange 0.16
       maxRange 3
     }
     DEF cameraRGB Camera {
       name "cameraRGB"
       fieldOfView 0.741
-      width 1920
-      height 1080
+      width 1080
+      height 1920
       far 3
     }
   ]
@@ -35,8 +35,8 @@ DEF cameraRobot Robot {
   controller "camera_controller"
 }
 Viewpoint {
-  orientation -0.9964114816222868 0.07751435370817031 0.033995356454726885 0.7995751999586109
-  position 0.09582443790822859 2.874280872495702 1.4361173948221793
+  orientation -0.9681283235593239 0.21346984318495274 0.13098921777308534 1.1156562179854328
+  position 0.049575598181660865 2.4240063897841173 0.3446363774620902
   followType "None"
 }
 TexturedBackground {
@@ -517,7 +517,7 @@ DEF Cardboard_Box Solid {
   translationStep 0.001
 }
 DEF PCB Solid {
-  translation -0.0917325 1.32181 -0.121626
+  translation -0.0915354 1.35181 -0.121068
   rotation 0.03197624581717933 0.9994882573773807 -0.0008620140175127586 0.6264856804852718
   children [
     Connector {

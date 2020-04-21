@@ -33,7 +33,11 @@ def recvall(n):
     # Helper function to recv n bytes or return None if EOF is hit
     data = bytearray()
     while len(data) < n:
-        packet = conn.recv(n - len(data))
+        packet = None
+        try:
+            packet = conn.recv(n - len(data))
+        except socket.error:
+            pass
         if not packet:
             return None
         data.extend(packet)
@@ -95,6 +99,7 @@ server.listen()
 print("Waiting for connection")
 robot.step(1) # webots won't print without a step
 conn, addr = server.accept()
+conn.setblocking(False)
 print("Connected")
 
 #Init loop
@@ -175,4 +180,4 @@ while robot.step(timestep) != -1:
             trajectory_test = False
 
 conn.close()
-print("Controller ended")
+print("Robot controller ended")

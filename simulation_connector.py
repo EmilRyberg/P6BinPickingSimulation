@@ -12,9 +12,9 @@ class Command:
         self.args = {}
 
 class SimulationConnector:
-    def __init__(self):
+    def __init__(self, port):
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.conn.connect(('127.0.0.1', 2000))
+        self.conn.connect(('127.0.0.1', port))
         print("Connected")
 
     def __del__(self):
@@ -83,7 +83,8 @@ class SimulationConnector:
             raise Exception("wrong option for suction: " + option)
 
 if __name__ == '__main__':
-    connector = SimulationConnector()
+    connector = SimulationConnector(2000)
+    camera = SimulationConnector(2001)
     #connector.get_image()
     #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
     #connector.movej([0,0,0,0,0,0], 1)

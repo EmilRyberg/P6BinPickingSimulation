@@ -7,6 +7,7 @@ import numpy as np
 import socket
 import struct
 import pickle
+import threading
 from PIL import Image as pimg
 np.set_printoptions(precision=4, suppress=True)
 
@@ -41,6 +42,11 @@ def respond(result, data = None):
     cmd["data"] = data
     send_msg(pickle.dumps(cmd))
 
+def continous_timestep():
+    while robot.step(timestep) != -1:
+        pass
+
+
 
 robot = Robot()
 
@@ -71,11 +77,8 @@ robot.step(1) # webots won't print without a step
 conn, addr = server.accept()
 print("Connected")
 
-#Init loop
-while robot.step(timestep) != -1:
-    time_passed += timestep
-    if time_passed > wait_time:
-        break
+x = threading.Thread(target=continous_timestep)
+x.start()
 
 
 # Main loop:

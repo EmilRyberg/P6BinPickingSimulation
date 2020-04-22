@@ -6,16 +6,28 @@ from controller import RangeFinder
 from controller import Camera
 from controller import Supervisor
 import random
+import socket
+import struct
+import pickle
+import numpy as np
 import math
 
 #robot = Robot()
 supervisor = Supervisor()
+connector = None
 timestep = 1
 
-#motors = [robot.getMotor("shoulder_pan_joint"), robot.getMotor("shoulder_lift_joint"), robot.getMotor("elbow_joint"),
-          #robot.getMotor("wrist_1_joint"), robot.getMotor("wrist_2_joint"), robot.getMotor("wrist_3_joint")]
+conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+motors = [supervisor.getMotor("shoulder_pan_joint"), supervisor.getMotor("shoulder_lift_joint"), supervisor.getMotor("elbow_joint"),
+          supervisor.getMotor("wrist_1_joint"), supervisor.getMotor("wrist_2_joint"), supervisor.getMotor("wrist_3_joint")]
 #motor_sensors = [robot.getPositionSensor("shoulder_pan_joint_sensor"), robot.getPositionSensor("shoulder_lift_joint_sensor"), robot.getPositionSensor("elbow_joint_sensor"),
           #robot.getPositionSensor("wrist_1_joint_sensor"), robot.getPositionSensor("wrist_2_joint_sensor"), robot.getPositionSensor("wrist_3_joint_sensor")]
+
+camera = supervisor.getCamera('cameraRGB')
+depth_camera = supervisor.getRangeFinder('cameraDepth')
+camera.enable(1)
+depth_camera.enable(1)
 
 phone_part_objects = [
     supervisor.getFromDef('Bottom_Cover'),
@@ -30,8 +42,8 @@ phone_part_objects = [
     supervisor.getFromDef('PCB_2')
 ]
 
-translation_fields = [node.getField("translation") for node in phone_part_objects]
-rotation_fields = [node.getField("rotation") for node in phone_part_objects]
+translation_fields = [node.getField('translation') for node in phone_part_objects]
+rotation_fields = [node.getField('rotation') for node in phone_part_objects]
 
 front_cover_initial_pos = [-0.17, -0.16]
 back_cover_initial_pos = [-0.16, -0.16]
@@ -50,7 +62,6 @@ for index, (translation_field, rotation_field) in enumerate(zip(translation_fiel
     rotation_field.setSFRotation(rotation)
     random_x_shift = random.random() * (max_movement[0] * 2) - max_movement[0]
     random_z_shift = random.random() * (max_movement[1] * 2) - max_movement[1]
-    print(current_position)
     if index < 2:
         # back cover
         translation_field.setSFVec3f([back_cover_initial_pos[0] + random_x_shift, height, back_cover_initial_pos[1] + random_z_shift])
@@ -67,7 +78,17 @@ for part in phone_part_objects:
 #for sensor in motor_sensors:
 #    sensor.enable(10)
 
+motors[0].setPosition(math.pi / 2)
+
 # Main loop:
 # - perform simulation steps until Webots is stopping the controller
+wait_time = 5 # seconds
+start_time = supervisor.getTime()
+first_run = True
+#connector = SimulationConnector()
 while supervisor.step(timestep) != -1:
-    pass
+    print('running')
+    if supervisor.getTime() - start_time >= wait_time:
+        print('getting image')
+        #print(connector.get_image())
+        #connector.execute_dummy_cmd()

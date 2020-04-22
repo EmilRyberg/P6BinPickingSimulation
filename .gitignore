@@ -17,3 +17,5 @@ vision/yolo/config/*
 vision/yolo/data/**/*
 vision/*.avi
 *.cache
+
+.Ur_bin_picking.wbproj

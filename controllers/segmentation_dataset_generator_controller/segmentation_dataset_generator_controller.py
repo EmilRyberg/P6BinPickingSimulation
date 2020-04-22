@@ -16,7 +16,7 @@ import cv2
 #robot = Robot()
 supervisor = Supervisor()
 connector = None
-timestep = 5
+timestep = 1
 
 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -30,7 +30,7 @@ depth_camera = supervisor.getRangeFinder('cameraDepth')
 ur_node = supervisor.getFromDef('UR5')
 camera_transform_node = ur_node.getField('children').getMFNode(0)
 camera_node = camera_transform_node.getField('children').getMFNode(1)
-camera.enable(4)
+camera.enable(1)
 #depth_camera.enable(35)
 
 phone_part_objects = [
@@ -45,6 +45,16 @@ phone_part_objects = [
     supervisor.getFromDef('PCB'),
     supervisor.getFromDef('PCB_2')
 ]
+
+pbr_apperance_nodes = []
+original_colors = []
+for part in phone_part_objects:
+    children = part.getField('children')
+    shape = children.getMFNode(1)
+    pbr_apperance_node = shape.getField('appearance')
+    color = pbr_apperance_node.getSFNode().getField('baseColor').getSFColor()
+    pbr_apperance_nodes.append(pbr_apperance_node)
+    original_colors.append(color)
 
 translation_fields = [node.getField('translation') for node in phone_part_objects]
 rotation_fields = [node.getField('rotation') for node in phone_part_objects]
@@ -83,11 +93,17 @@ def randomize_phone_parts():
         part.resetPhysics()
 
 
-def set_part_only_visible(ii):
-    for i, part in enumerate(phone_part_objects):
+def set_color_for_all_except_index(ii):
+    for i, node in enumerate(pbr_apperance_nodes):
         if i == ii:
+            node.getSFNode().getField('baseColor').setSFColor([1, 1, 0])
             continue
-        part.setVisibility(camera_node, False)
+        node.getSFNode().getField('baseColor').setSFColor([0, 0, 0])
+
+
+def restore_colors():
+    for i, node in enumerate(pbr_apperance_nodes):
+        node.getSFNode().getField('baseColor').setSFColor(original_colors[i])
 
 
 def toggle_visibility_for_all_parts(visible):
@@ -115,16 +131,17 @@ supervisor.step(timestep)
 background_img = transform_image(camera.getImageArray())
 cv2.imwrite('background.png', background_img)
 toggle_visibility_for_all_parts(True)
+restore_colors()
 
 while supervisor.step(timestep) != -1:
     if supervisor.getTime() - last_run_time >= wait_time and image_index < images_to_take:
         for index in range(0, len(phone_part_objects)):
-            set_part_only_visible(index)
+            set_color_for_all_except_index(index)
             supervisor.step(timestep)
             image = transform_image(camera.getImageArray())
-            image_subtracted = image - background_img
+            image_subtracted = cv2.subtract(image, background_img)
             cv2.imwrite('img' + str(index) + '.png', image_subtracted)
-            toggle_visibility_for_all_parts(True)
+            restore_colors()
         last_run_time = supervisor.getTime()
         image_index += 1
     elif image_index >= images_to_take:

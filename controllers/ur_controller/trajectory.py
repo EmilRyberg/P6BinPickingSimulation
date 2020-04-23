@@ -5,11 +5,11 @@ from scipy.spatial.transform import Rotation, Slerp
 from utils import Utils
 
 class Trajectory:
-    def __init__(self, motor_sensors, timestep):
+    def __init__(self, motor_sensors, fkin, timestep):
         self.motor_sensors = motor_sensors
         self.timestep = timestep
         self.joint_angles = [0]*6
-        self.fkin = ForwardKinematics()
+        self.fkin = fkin
         self.ikin = InverseKinematics()
         self.rotation_matrix = [[0]*3]*3
         self.starting_rotation = None
@@ -25,10 +25,10 @@ class Trajectory:
         if scipy.version.version[0] == 1 and scipy.version.version[2] < 4:
             raise Exception("Scipy >1.4.1 required")
 
-    def __calculate_distance(self, x1, y1, z1, x2, y2, z2):
+    def _calculate_distance(self, x1, y1, z1, x2, y2, z2):
         return np.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
 
-    def __get_joint_angles(self):
+    def _get_joint_angles(self):
         for i in range(6):
             self.joint_angles[i] = self.motor_sensors[i].getValue()
         return self.joint_angles
@@ -36,10 +36,10 @@ class Trajectory:
     def generate_trajectory(self, goal, speed):
         self.goal_cart_pos = np.array([goal[0], goal[1], goal[2]])
         self.goal_rotation = Rotation.from_rotvec([goal[3], goal[4], goal[5]])
-        transformation_matrix = self.fkin.compute_0_to_6_matrix(self.__get_joint_angles())
+        transformation_matrix = self.fkin.compute_TBT(self._get_joint_angles())
         self.starting_cart_pos, self.starting_rotation = Utils.tmat_to_trans_and_rot(transformation_matrix)
-        distance = self.__calculate_distance(*self.starting_cart_pos, *self.goal_cart_pos)
-        print(distance)
+        distance = self._calculate_distance(*self.starting_cart_pos, *self.goal_cart_pos)
+        print("distance: " + str(distance))
         self.total_steps = int((distance/speed) / (self.timestep/1000))
         if self.total_steps == 0:
             self.total_steps = 1 # if the robot is already there execute 1 step with no move
@@ -58,9 +58,10 @@ class Trajectory:
             self.current_step += 1
             cart_pos = self.starting_cart_pos + (self.current_step / self.total_steps) * (self.goal_cart_pos - self.starting_cart_pos)
             r = self.slerp(self.current_step/self.total_steps)
-            transformation_matrix = Utils.trans_and_rot_to_tmat(cart_pos, r)
+            transformation_matrix_BT= Utils.trans_and_rot_to_tmat(cart_pos, r)
+            transformation_matrix_06 = self.fkin.convert_TBT_to_T06(transformation_matrix_BT)
             if self.current_step == self.total_steps:
                 self.is_done = True
-            return self.ikin.compute_joint_angles(transformation_matrix, self.config_id)
+            return self.ikin.compute_joint_angles(transformation_matrix_06, self.config_id)
         else:
             raise Exception("the current trajectory is already finished")

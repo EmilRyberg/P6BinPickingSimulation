@@ -9,6 +9,7 @@ from kinematics.inverse import InverseKinematics
 from kinematics.forward import ForwardKinematics
 from trajectory import Trajectory
 from utils import Utils
+from scipy.spatial.transform import Rotation
 import socket
 import struct
 import pickle
@@ -18,7 +19,9 @@ np.set_printoptions(precision=4, suppress=True)
 def send_msg(msg):
     # Prefix each message with a 4-byte length (network byte order)
     msg = struct.pack('>I', len(msg)) + msg
+    conn.setblocking(True)
     conn.sendall(msg)
+    conn.setblocking(False)
 
 def recv_msg():
     # Read message length and unpack it into an integer
@@ -68,16 +71,14 @@ motor_sensors = [robot.getPositionSensor("shoulder_pan_joint_sensor"), robot.get
           robot.getPositionSensor("wrist_1_joint_sensor"), robot.getPositionSensor("wrist_2_joint_sensor"), robot.getPositionSensor("wrist_3_joint_sensor")]
 
 
-trajectory = Trajectory(motor_sensors, timestep)
-
 for sensor in motor_sensors:
     sensor.enable(10)
-motors[0].setPosition(np.pi / 2)
-motors[1].setPosition(-np.pi*0.7)
-motors[2].setPosition(-np.pi / 2)
-motors[3].setPosition(-np.pi*0.3)
-motors[4].setPosition(np.pi / 2)
-motors[5].setPosition(np.pi / 2)
+# motors[0].setPosition(np.pi / 2)
+# motors[1].setPosition(-np.pi*0.7)
+# motors[2].setPosition(-np.pi / 2)
+# motors[3].setPosition(-np.pi*0.3)
+# motors[4].setPosition(np.pi / 2)
+# motors[5].setPosition(np.pi / 2)
 first_run = True
 can_run = False
 time_passed = 0
@@ -88,6 +89,7 @@ inv_test = False
 trajectory_test = False
 ikin = InverseKinematics()
 fkin = ForwardKinematics()
+trajectory = Trajectory(motor_sensors, fkin, timestep)
 current_task = "idle"
 args = None
 command_is_executing = False
@@ -99,16 +101,17 @@ server.listen()
 print("Waiting for connection")
 robot.step(1) # webots won't print without a step
 conn, addr = server.accept()
+#conn.settimeout(0.1)
 conn.setblocking(False)
 print("Connected")
 
 #Init loop
-while robot.step(timestep) != -1:
-    time_passed += timestep
-    if time_passed > wait_time:
-        break
+# while robot.step(timestep) != -1:
+#     time_passed += timestep
+#     if time_passed > wait_time:
+#         break
 
-trajectory.generate_trajectory([-0.13, 0.16, 0.7, 0.5, -1.5, 0.5], 0.1)
+#trajectory.generate_trajectory([-0.13, 0.16, 0.7, 0.5, -1.5, 0.5], 0.1)
 
 # Main loop:
 # - perform simulation steps until Webots is stopping the controller
@@ -121,13 +124,13 @@ while robot.step(timestep) != -1:
         msg = recv_msg()
         if msg != None:
             cmd = pickle.loads(msg)
-            print(cmd)
+            #print(cmd)
             current_task = cmd["name"]
             args = cmd["args"]
             print("Executing: " + current_task + " " + str(args))
             print_once_flag = True
 
-    if current_task == "movej":
+    elif current_task == "movej":
         if not command_is_executing:
             for i in range(6):
                 motors[i].setVelocity(args["speed"])
@@ -142,17 +145,17 @@ while robot.step(timestep) != -1:
                 current_task = "idle"
                 respond("done")
 
-    if current_task == "suction_on":
+    elif current_task == "suction_on":
         suction.lock()
         current_task = "idle"
         respond("done")
 
-    if current_task == "suction_off":
+    elif current_task == "suction_off":
         suction.unlock()
         current_task = "idle"
         respond("done")
 
-    if current_task == "movel":
+    elif current_task == "movel":
         if not command_is_executing:
             trajectory.generate_trajectory(args["coords"], args["speed"])
             command_is_executing = True
@@ -165,19 +168,37 @@ while robot.step(timestep) != -1:
                 current_task = "idle"
                 respond("done")
 
-    if current_task == "get_image":
+    elif current_task == "getl":
+        thetas = [0]*6
+        for i in range(6):
+            thetas[i] = motor_sensors[i].getValue()
+        tmat = fkin.compute_TBT(thetas)
+        trans, rot = Utils.tmat_to_trans_and_rot(tmat)
+        rotvec = rot.as_rotvec()
+        pose = [trans[0], trans[1], trans[2], rotvec[0], rotvec[1], rotvec[2]]
+        respond("done", pose)
+        current_task = "idle"
+
+    elif current_task == "set_tcp":
+        pose = args["pose"]
+        trans = [pose[0], pose[1], pose[2]]
+        rotvec = [pose[3], pose[4], pose[5]]
+        rot = Rotation.from_rotvec(rotvec)
+        tmat = Utils.trans_and_rot_to_tmat(trans, rot)
+        fkin.T6T = tmat
+        current_task = "idle"
+        respond("done")
+
+    elif current_task == "get_image":
         pil_img = pimg.open("test.png")
         np_img = np.asarray(pil_img)
         respond("done", np_img)
         current_task = "idle"
 
-    if trajectory_test:
-        angles = trajectory.calculate_step()
-        #print("step ", trajectory.current_step, "out of ", trajectory.total_steps)
-        for i in range(6):
-            motors[i].setPosition(angles[i])
-        if trajectory.is_done:
-            trajectory_test = False
+    else:
+        respond("Unknown command: " + current_task)
+        raise Exception("Received unknown command: " + current_task)
+
 
 conn.close()
 print("Robot controller ended")

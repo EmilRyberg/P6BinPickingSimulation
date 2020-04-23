@@ -14,7 +14,15 @@ class ForwardKinematics(Kinematics):
                         [np.sin(np.pi), np.cos(np.pi), 0, 0],
                         [0, 0, 1, 0],
                         [0, 0, 0, 1]])
-        self.TB0 = np.matmul(self.BRX, self.BRZ)
+        #self.TB0 = np.matmul(self.BRX, self.BRZ)
+        self.TB0 = [[1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1]]
+        self.T6T = [[1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1]]
         self.T0B = np.linalg.inv(self.TB0)
     def compute_0_to_6_matrix(self, thetas):
         T01 = self.compute_transformation_matrix(thetas[0], self.joint1_dh)
@@ -29,6 +37,14 @@ class ForwardKinematics(Kinematics):
     def computer_base_to_6_matrix(self, thetas):
         T06 = np.matmul(self.TB0, self.compute_0_to_6_matrix(thetas))
         return T06
+
+    def compute_TBT(self, thetas):
+        return np.matmul(self.computer_base_to_6_matrix(thetas), self.T6T)
+
+    def convert_TBT_to_T06(self, TBT):
+        TT6 = np.linalg.inv(self.T6T)
+        TB6 = np.matmul(TBT, TT6)
+        return self.convert_TB6_to_T06(TB6)
 
     def convert_T06_to_TB6(self, T06):
         return np.matmul(self.TB0, T06)

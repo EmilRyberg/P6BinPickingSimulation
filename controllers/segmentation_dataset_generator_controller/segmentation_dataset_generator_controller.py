@@ -12,11 +12,12 @@ import pickle
 import numpy as np
 import math
 import cv2
+import os
 
 #robot = Robot()
 supervisor = Supervisor()
 connector = None
-timestep = 1
+timestep = 100
 
 conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -30,7 +31,6 @@ depth_camera = supervisor.getRangeFinder('cameraDepth')
 ur_node = supervisor.getFromDef('UR5')
 camera_transform_node = ur_node.getField('children').getMFNode(0)
 camera_node = camera_transform_node.getField('children').getMFNode(1)
-camera.enable(1)
 #depth_camera.enable(35)
 
 phone_part_objects = [
@@ -44,6 +44,19 @@ phone_part_objects = [
     supervisor.getFromDef('Blue_Cover_2'),
     supervisor.getFromDef('PCB'),
     supervisor.getFromDef('PCB_2')
+]
+
+index_to_class_name = [
+    'BottomCover',
+    'BottomCover',
+    'WhiteCover',
+    'WhiteCover',
+    'BlackCover',
+    'BlackCover',
+    'BlueCover',
+    'BlueCover',
+    'PCB',
+    'PCB',
 ]
 
 pbr_apperance_nodes = []
@@ -119,29 +132,51 @@ def transform_image(img_array):
 
 randomize_phone_parts()
 
-wait_time = 3 # seconds
+wait_time = 3.5 # seconds
 last_run_time = supervisor.getTime()
 take_image = True
 is_first_run = True
-images_to_take = 1
+images_to_take = 200
 image_index = 0
-supervisor.step(timestep)
+camera.enable(1)
+supervisor.step(1)
 toggle_visibility_for_all_parts(False)
-supervisor.step(timestep)
+supervisor.step(1)
 background_img = transform_image(camera.getImageArray())
 cv2.imwrite('background.png', background_img)
 toggle_visibility_for_all_parts(True)
 restore_colors()
+camera.disable()
+
+dataset_path = 'dataset'
+if not os.path.isdir(dataset_path):
+    os.mkdir(dataset_path)
 
 while supervisor.step(timestep) != -1:
     if supervisor.getTime() - last_run_time >= wait_time and image_index < images_to_take:
+        camera.enable(1)
+        supervisor.step(1)
+        print(f'Taking image {image_index+1}/{images_to_take}')
+        save_path = os.path.join(dataset_path, f'img{image_index}')
+        if not os.path.isdir(save_path):
+            os.mkdir(save_path)
+        full_img = transform_image(camera.getImageArray())
+        cv2.imwrite(os.path.join(save_path, 'full_image.png'), full_img)
         for index in range(0, len(phone_part_objects)):
             set_color_for_all_except_index(index)
-            supervisor.step(timestep)
+            supervisor.step(1)
             image = transform_image(camera.getImageArray())
             image_subtracted = cv2.subtract(image, background_img)
-            cv2.imwrite('img' + str(index) + '.png', image_subtracted)
+            image_grayscale = cv2.cvtColor(image_subtracted, cv2.COLOR_BGR2GRAY)
+            _, image_binary = cv2.threshold(image_grayscale, 5, 255, cv2.THRESH_BINARY)
+            kernel = np.ones((5, 5), np.uint8)
+            image_binary = cv2.morphologyEx(image_binary, cv2.MORPH_CLOSE, kernel)
+            image_binary = cv2.morphologyEx(image_binary, cv2.MORPH_OPEN, kernel)
+            save_name = f"mask{index}_{index_to_class_name[index]}.png"
+            cv2.imwrite(os.path.join(save_path, save_name), image_binary)
             restore_colors()
+        camera.disable()
+        randomize_phone_parts()
         last_run_time = supervisor.getTime()
         image_index += 1
     elif image_index >= images_to_take:

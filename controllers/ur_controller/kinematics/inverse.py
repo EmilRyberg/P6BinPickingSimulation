@@ -5,7 +5,7 @@ import numpy as np
 from kinematics.forward import ForwardKinematics
 from kinematics.kinematics import Kinematics
 from kinematics.solution import InverseKinematicsShoulderSolution, InverseKinematicsSpecificSolution, \
-    InverseKinematicsSolution
+    InverseKinematicsSolution, InverseKinematicsWristSolution
 
 
 class InverseKinematics(Kinematics):
@@ -23,7 +23,7 @@ class InverseKinematics(Kinematics):
         return new_val
 
     def __compute_solution_for_theta_1(self, T06, theta_1, debug=False):
-        shoulder_solution = InverseKinematicsShoulderSolution()
+        wrist_solution = InverseKinematicsWristSolution()
 
         # Theta 5
         P06 = T06[:, 3]
@@ -39,18 +39,31 @@ class InverseKinematics(Kinematics):
             theta_5_1 = math.acos(theta_5_cos)
             theta_5_2 = -math.acos(theta_5_cos)
 
+        sigma = 0.00001
+
+        if theta_5_1 is not None and not -sigma <= math.sin(theta_5_1) <= sigma:
+            wrist_solution.solution_wrist_up = self.__compute_solution_for_wrist(theta_1, theta_5_1, T06)
+        else:
+            wrist_solution.solution_wrist_up.is_valid_solution = False
+        if theta_5_2 is not None and not -sigma <= math.sin(theta_5_2) <= sigma:
+            wrist_solution.solution_wrist_down = self.__compute_solution_for_wrist(theta_1, theta_5_2, T06)
+        else:
+            wrist_solution.solution_wrist_down.is_valid_solution = False
+        if not wrist_solution.solution_wrist_up.is_valid_solution and not wrist_solution.solution_wrist_down.is_valid_solution:
+            wrist_solution.is_valid_solution = False
+
+        if debug:
+            print(f"Theta 5: {theta_5_1:.3f}, {theta_5_2:.3f}")
+
+        return wrist_solution
+
+    def __compute_solution_for_wrist(self, theta_1, theta_5, T06, debug=False):
+        shoulder_solution = InverseKinematicsShoulderSolution()
+
         # Theta 6
         T60 = np.linalg.inv(T06)
         X60 = T60[:, 0]
         Y60 = T60[:, 1]
-
-        theta_5 = theta_5_1 if theta_5_1 != 0 else theta_5_2
-        if theta_5 == 0 or theta_5 is None:
-            shoulder_solution.is_valid_solution = False
-            return shoulder_solution
-
-        if debug:
-            print(f"Theta 5: {theta_5_1:.3f}, {theta_5_2:.3f}")
 
         theta_6_cos = (X60[0] * math.sin(theta_1) - Y60[0] * math.cos(theta_1)) / math.sin(
             theta_5)  # only using one of the theta 5's for now..
@@ -138,6 +151,39 @@ class InverseKinematics(Kinematics):
 
         return specific_solution
 
+    def __print_all_solutions(self, solution):
+        print("Inverse Solutions:")
+        if solution.solution_shoulder_left.is_valid_solution:
+            if solution.solution_shoulder_left.solution_wrist_up.is_valid_solution:
+                if solution.solution_shoulder_left.solution_wrist_up.solution_elbow_up.is_valid_solution:
+                    print(
+                        f"Shoulder left, wrist up, elbow up: {solution.solution_shoulder_left.solution_wrist_up.solution_elbow_up.thetas}")
+                if solution.solution_shoulder_left.solution_wrist_up.solution_elbow_down.is_valid_solution:
+                    print(
+                        f"Shoulder left, wrist up, elbow down: {solution.solution_shoulder_left.solution_wrist_up.solution_elbow_down.thetas}")
+            if solution.solution_shoulder_left.solution_wrist_down.is_valid_solution:
+                if solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.is_valid_solution:
+                    print(
+                        f"Shoulder left, wrist down, elbow up: {solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.thetas}")
+                if solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down:
+                    print(
+                        f"Shoulder left, wrist down, elbow down: {solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down.thetas}")
+        if solution.solution_shoulder_right.is_valid_solution:
+            if solution.solution_shoulder_right.solution_wrist_up.is_valid_solution:
+                if solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.is_valid_solution:
+                    print(
+                        f"Shoulder right, wrist up, elbow up: {solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.thetas}")
+                if solution.solution_shoulder_right.solution_wrist_up.solution_elbow_down.is_valid_solution:
+                    print(
+                        f"Shoulder right, wrist up, elbow down: {solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.thetas}")
+            if solution.solution_shoulder_right.solution_wrist_down.is_valid_solution:
+                if solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.is_valid_solution:
+                    print(
+                        f"Shoulder right, wrist down, elbow up: {solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.thetas}")
+                if solution.solution_shoulder_right.solution_wrist_down.solution_elbow_down.is_valid_solution:
+                    print(
+                        f"Shoulder right, wrist down, elbow down: {solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.thetas}")
+
     def compute_joint_angles(self, T06, config_id=-1, debug=False):
         solution = InverseKinematicsSolution()
 
@@ -158,50 +204,78 @@ class InverseKinematics(Kinematics):
             solution.solution_shoulder_right = self.__compute_solution_for_theta_1(T06, theta_1_2, debug)
 
         if debug:
-            print("Inverse Solutions:")
-            if solution.solution_shoulder_left.is_valid_solution and solution.solution_shoulder_left.solution_elbow_up.is_valid_solution:
-                print(f"Shoulder left, elbow up: {solution.solution_shoulder_left.solution_elbow_up.thetas}")
-            if solution.solution_shoulder_left.is_valid_solution and solution.solution_shoulder_left.solution_elbow_down.is_valid_solution:
-                print(f"Shoulder left, elbow down: {solution.solution_shoulder_left.solution_elbow_down.thetas}")
-            if solution.solution_shoulder_right.is_valid_solution and solution.solution_shoulder_right.solution_elbow_up.is_valid_solution:
-                print(f"Shoulder right, elbow up: {solution.solution_shoulder_right.solution_elbow_up.thetas}")
-            if solution.solution_shoulder_right.is_valid_solution and solution.solution_shoulder_right.solution_elbow_down.is_valid_solution:
-                print(f"Shoulder right, elbow down: {solution.solution_shoulder_right.solution_elbow_down.thetas}")
+            self.__print_all_solutions(solution)
 
         if config_id == -1:
             return solution
         else:
             if config_id == 0:
-                return solution.solution_shoulder_left.solution_elbow_up.thetas
+                return solution.solution_shoulder_left.solution_wrist_up.solution_elbow_up.thetas
             elif config_id == 1:
-                return solution.solution_shoulder_left.solution_elbow_down.thetas
+                return solution.solution_shoulder_left.solution_wrist_up.solution_elbow_down.thetas
             elif config_id == 2:
-                return solution.solution_shoulder_right.solution_elbow_up.thetas
+                return solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.thetas
             elif config_id == 3:
-                return solution.solution_shoulder_right.solution_elbow_down.thetas
+                return solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down.thetas
+            if config_id == 4:
+                return solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.thetas
+            elif config_id == 5:
+                return solution.solution_shoulder_right.solution_wrist_up.solution_elbow_down.thetas
+            elif config_id == 6:
+                return solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.thetas
+            elif config_id == 7:
+                return solution.solution_shoulder_right.solution_wrist_down.solution_elbow_down.thetas
             else:
                 raise Exception("invalid config solution id")
 
     def get_current_configuration_id(self, joint_angles):
         T06 = self.forward_kinematics.compute_0_to_6_matrix(joint_angles)
         solution = self.compute_joint_angles(T06)
-        differences = np.full(4, 1000)
-        if solution.solution_shoulder_left.is_valid_solution and solution.solution_shoulder_left.solution_elbow_up.is_valid_solution:
-            differences[0] = 0
-        if solution.solution_shoulder_left.is_valid_solution and solution.solution_shoulder_left.solution_elbow_down.is_valid_solution:
-            differences[1] = 0
-        if solution.solution_shoulder_right.is_valid_solution and solution.solution_shoulder_right.solution_elbow_up.is_valid_solution:
-            differences[2] = 0
-        if solution.solution_shoulder_right.is_valid_solution and solution.solution_shoulder_right.solution_elbow_down.is_valid_solution:
-            differences[3] = 0
+        differences = np.full(8, 1000)
+        if solution.solution_shoulder_left.is_valid_solution:
+            if solution.solution_shoulder_left.solution_wrist_up.is_valid_solution:
+                if solution.solution_shoulder_left.solution_wrist_up.solution_elbow_up.is_valid_solution:
+                    differences[0] = 0
+                if solution.solution_shoulder_left.solution_wrist_up.solution_elbow_down.is_valid_solution:
+                    differences[1] = 0
+            if solution.solution_shoulder_left.solution_wrist_down.is_valid_solution:
+                if solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.is_valid_solution:
+                    differences[2] = 0
+                if solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down:
+                    differences[3] = 0
+        if solution.solution_shoulder_right.is_valid_solution:
+            if solution.solution_shoulder_right.solution_wrist_up.is_valid_solution:
+                if solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.is_valid_solution:
+                    differences[4] = 0
+                if solution.solution_shoulder_right.solution_wrist_up.solution_elbow_down.is_valid_solution:
+                    differences[5] = 0
+            if solution.solution_shoulder_right.solution_wrist_down.is_valid_solution:
+                if solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.is_valid_solution:
+                    differences[6] = 0
+                if solution.solution_shoulder_right.solution_wrist_down.solution_elbow_down.is_valid_solution:
+                    differences[7] = 0
         for i in range(6):
-            if solution.solution_shoulder_left.is_valid_solution and solution.solution_shoulder_left.solution_elbow_up.is_valid_solution:
-                differences[0] += abs(joint_angles[i] - solution.solution_shoulder_left.solution_elbow_up.thetas[i])
-            if solution.solution_shoulder_left.is_valid_solution and solution.solution_shoulder_left.solution_elbow_down.is_valid_solution:
-                differences[1] += abs(joint_angles[i] - solution.solution_shoulder_left.solution_elbow_down.thetas[i])
-            if solution.solution_shoulder_right.is_valid_solution and solution.solution_shoulder_right.solution_elbow_up.is_valid_solution:
-                differences[2] += abs(joint_angles[i] - solution.solution_shoulder_right.solution_elbow_up.thetas[i])
-            if solution.solution_shoulder_right.is_valid_solution and solution.solution_shoulder_right.solution_elbow_down.is_valid_solution:
-                differences[3] += abs(joint_angles[i] - solution.solution_shoulder_right.solution_elbow_down.thetas[i])
+            if solution.solution_shoulder_left.is_valid_solution:
+                if solution.solution_shoulder_left.solution_wrist_up.is_valid_solution:
+                    if solution.solution_shoulder_left.solution_wrist_up.solution_elbow_up.is_valid_solution:
+                        differences[0] += abs(joint_angles[i] - solution.solution_shoulder_left.solution_wrist_up.solution_elbow_up.thetas[i])
+                    if solution.solution_shoulder_left.solution_wrist_up.solution_elbow_down.is_valid_solution:
+                        differences[1] += abs(joint_angles[i] - solution.solution_shoulder_left.solution_wrist_up.solution_elbow_down.thetas[i])
+                if solution.solution_shoulder_left.solution_wrist_down.is_valid_solution:
+                    if solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.is_valid_solution:
+                        differences[2] += abs(joint_angles[i] - solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.thetas[i])
+                    if solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down:
+                        differences[3] += abs(joint_angles[i] - solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down.thetas[i])
+            if solution.solution_shoulder_right.is_valid_solution:
+                if solution.solution_shoulder_right.solution_wrist_up.is_valid_solution:
+                    if solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.is_valid_solution:
+                        differences[4] += abs(joint_angles[i] - solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.thetas[i])
+                    if solution.solution_shoulder_right.solution_wrist_up.solution_elbow_down.is_valid_solution:
+                        differences[5] += abs(joint_angles[i] - solution.solution_shoulder_right.solution_wrist_up.solution_elbow_down.thetas[i])
+                if solution.solution_shoulder_right.solution_wrist_down.is_valid_solution:
+                    if solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.is_valid_solution:
+                        differences[6] += abs(joint_angles[i] - solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.thetas[i])
+                    if solution.solution_shoulder_right.solution_wrist_down.solution_elbow_down.is_valid_solution:
+                        differences[7] += abs(joint_angles[i] - solution.solution_shoulder_right.solution_wrist_down.solution_elbow_down.thetas[i])
         print(differences)
         return np.argmin(differences)

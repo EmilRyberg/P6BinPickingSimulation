@@ -11,9 +11,16 @@ class InverseKinematicsShoulderSolution:
         self.solution_elbow_down = InverseKinematicsSpecificSolution()
 
 
+class InverseKinematicsWristSolution:
+    def __init__(self):
+        self.is_valid_solution = True
+        self.solution_wrist_up = InverseKinematicsShoulderSolution()
+        self.solution_wrist_up.is_valid_solution = False
+        self.solution_wrist_down = InverseKinematicsShoulderSolution()
+        self.solution_wrist_down.is_valid_solution = False
+
+
 class InverseKinematicsSolution:
     def __init__(self):
-        self.solution_shoulder_left = InverseKinematicsShoulderSolution()
-        self.solution_shoulder_left.is_valid_solution = False
-        self.solution_shoulder_right = InverseKinematicsShoulderSolution()
-        self.solution_shoulder_right.is_valid_solution = False
+        self.solution_shoulder_left = InverseKinematicsWristSolution()
+        self.solution_shoulder_right = InverseKinematicsWristSolution()

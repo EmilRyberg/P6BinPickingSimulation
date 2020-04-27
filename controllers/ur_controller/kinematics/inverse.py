@@ -217,7 +217,7 @@ class InverseKinematics(Kinematics):
                 return solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.thetas
             elif config_id == 3:
                 return solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down.thetas
-            if config_id == 4:
+            elif config_id == 4:
                 return solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.thetas
             elif config_id == 5:
                 return solution.solution_shoulder_right.solution_wrist_up.solution_elbow_down.thetas

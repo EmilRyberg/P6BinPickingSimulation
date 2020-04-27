@@ -16,6 +16,7 @@ class Trajectory:
         self.starting_cart_pos = None
         self.goal_cart_pos = None
         self.goal_rotation = None
+        self.last_computed_angles = None
         self.config_id = None
         self.total_steps = 0
         self.current_step = 0
@@ -44,6 +45,7 @@ class Trajectory:
         if self.total_steps == 0:
             self.total_steps = 1 # if the robot is already there execute 1 step with no move
         self.config_id = self.ikin.get_current_configuration_id(self.joint_angles)
+        self.last_computed_angles = self._get_joint_angles()
 
         Utils.print_tmat(transformation_matrix, "start")
         print("goal ", goal)
@@ -56,12 +58,29 @@ class Trajectory:
     def calculate_step(self):
         if not self.is_done:
             self.current_step += 1
+            print("step "+str(self.current_step)+"/"+str(self.total_steps))
             cart_pos = self.starting_cart_pos + (self.current_step / self.total_steps) * (self.goal_cart_pos - self.starting_cart_pos)
             r = self.slerp(self.current_step/self.total_steps)
             transformation_matrix_BT= Utils.trans_and_rot_to_tmat(cart_pos, r)
             transformation_matrix_06 = self.fkin.convert_TBT_to_T06(transformation_matrix_BT)
             if self.current_step == self.total_steps:
                 self.is_done = True
-            return self.ikin.compute_joint_angles(transformation_matrix_06, self.config_id)
+            computed_angles = self.ikin.compute_joint_angles(transformation_matrix_06, self.config_id)
+            for i in range(6):
+                computed_angles[i] -= 6.28
+                difference = abs(computed_angles[i] - self.last_computed_angles[i])
+                limit = 0
+                while difference > 0.5 and limit < 3:
+                    computed_angles[i] += 6.28
+                    difference = abs(computed_angles[i] - self.last_computed_angles[i])
+                    limit += 1
+                if limit >= 3:
+                    print("computed, last computed")
+                    print(computed_angles)
+                    print(self.last_computed_angles)
+                    raise Exception("something went wrong")
+            print(computed_angles)
+            self.last_computed_angles = computed_angles
+            return computed_angles
         else:
             raise Exception("the current trajectory is already finished")

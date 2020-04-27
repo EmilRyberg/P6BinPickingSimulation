@@ -179,37 +179,30 @@ class SimulationConnector:
         cmd = {"name" : "suction_off", "args" : {}}
         self._execute_remote_command(cmd)
 
-
     def get_image(self):
         cmd = {"name": "get_image", "args": {}}
         np_img = self._execute_remote_command(cmd)
         pil_img = pimg.fromarray(np_img)
+        pil_img = pil_img.transpose(pimg.FLIP_TOP_BOTTOM)
         pil_img.show()
+        return np.asarray(pil_img)
 
     def get_depth(self):
         cmd = {"name": "get_depth", "args": {}}
         np_img = self._execute_remote_command(cmd)
-        np_img = np_img * 85
+        np_img = np_img * 100
         pil_img = pimg.fromarray(np_img)
-        #pil_img.show()
+        pil_img = pil_img.transpose(pimg.FLIP_TOP_BOTTOM)
+        pil_img.show()
+        return np.asarray(pil_img)
 
 
 
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
-    camera = SimulationConnector(2001)
     connector.move_to_home()
     connector.set_tcp(connector.gripper_tcp)
-    print("getl " + str(connector.getl()))
-    connector.move_to_home_l()
-    connector.movel([200, -300, 400, 0, 0, -0.8])
-    connector.movel([-200, -500, 300, 0, 0, -0.8])
-    #connector.movel([300, -300, 500, 2.22, -2.22, 0], vel=0.1)
-    #camera.get_depth()
-    #camera.get_image()
-    #connector.get_image()
-    #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
-    #connector.movej([0,0,0,0,0,0], 1)
-    #connector.suction_handler(1)
-    #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
+    connector.move_out_of_view()
+    connector.get_image()
+    connector.get_depth()
     time.sleep(10)

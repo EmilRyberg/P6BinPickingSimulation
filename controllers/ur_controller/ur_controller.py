@@ -61,6 +61,8 @@ def respond(result, data = None):
 
 robot = Robot()
 suction = Connector("suction")
+cameraRGB = robot.getCamera("cameraRGB")
+cameraDepth = robot.getRangeFinder("cameraDepth")
 
 
 timestep = int(robot.getBasicTimeStep())
@@ -94,6 +96,8 @@ current_task = "idle"
 args = None
 command_is_executing = False
 print_once_flag = True
+rgb_enabled = False
+depth_enabled = False
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(('localhost', 2000))
@@ -190,10 +194,26 @@ while robot.step(timestep) != -1:
         respond("done")
 
     elif current_task == "get_image":
-        pil_img = pimg.open("test.png")
-        np_img = np.asarray(pil_img)
-        respond("done", np_img)
-        current_task = "idle"
+        if not rgb_enabled:
+            cameraRGB.enable(timestep)
+            rgb_enabled = True
+        else:
+            np_img = np.array(cameraRGB.getImageArray(), dtype=np.uint8)
+            respond("done", np_img)
+            current_task = "idle"
+            cameraRGB.disable()
+            rgb_enabled = False
+
+    elif current_task == "get_depth":
+        if not depth_enabled:
+            cameraDepth.enable(timestep)
+            depth_enabled = True
+        else:
+            np_dep = np.array(cameraDepth.getRangeImageArray())
+            respond("done", np_dep)
+            current_task = "idle"
+            cameraDepth.disable()
+            depth_enabled = False
 
     else:
         respond("Unknown command: " + current_task)

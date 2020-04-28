@@ -11,6 +11,7 @@ from trajectory import Trajectory
 from utils import Utils
 from scipy.spatial.transform import Rotation
 import socket
+import time
 import struct
 import pickle
 from PIL import Image as pimg
@@ -68,19 +69,22 @@ cameraDepth = robot.getRangeFinder("cameraDepth")
 timestep = int(robot.getBasicTimeStep())
 
 motors = [robot.getMotor("shoulder_pan_joint"), robot.getMotor("shoulder_lift_joint"), robot.getMotor("elbow_joint"),
-          robot.getMotor("wrist_1_joint"), robot.getMotor("wrist_2_joint"), robot.getMotor("wrist_3_joint")]
+          robot.getMotor("wrist_1_joint"), robot.getMotor("wrist_2_joint"), robot.getMotor("wrist_3_joint"), robot.getMotor("rotational motor")]
 motor_sensors = [robot.getPositionSensor("shoulder_pan_joint_sensor"), robot.getPositionSensor("shoulder_lift_joint_sensor"), robot.getPositionSensor("elbow_joint_sensor"),
           robot.getPositionSensor("wrist_1_joint_sensor"), robot.getPositionSensor("wrist_2_joint_sensor"), robot.getPositionSensor("wrist_3_joint_sensor")]
 
+finger_motors = [robot.getMotor("right_finger_motor"), robot.getMotor("left_finger_motor")]
+finger_sensors = [robot.getPositionSensor("right_finger_sensor"), robot.getPositionSensor("left_finger_sensor")]
 
 for sensor in motor_sensors:
     sensor.enable(10)
-# motors[0].setPosition(np.pi / 2)
-# motors[1].setPosition(-np.pi*0.7)
-# motors[2].setPosition(-np.pi / 2)
-# motors[3].setPosition(-np.pi*0.3)
-# motors[4].setPosition(np.pi / 2)
-# motors[5].setPosition(np.pi / 2)
+motors[0].setPosition(1.57)
+motors[1].setPosition(-2.14)
+motors[2].setPosition(-1.57)
+motors[3].setPosition(-1.01)
+motors[4].setPosition(1.57)
+motors[5].setPosition(1.05)
+motors[6].setPosition(0.35)
 first_run = True
 can_run = False
 time_passed = 0
@@ -159,7 +163,40 @@ while robot.step(timestep) != -1:
         current_task = "idle"
         respond("done")
 
-    elif current_task == "movel":
+    if current_task == "close_gripper":
+        finger_motors[1].setVelocity(5)
+        finger_motors[1].setPosition(0.006)
+        finger_motors[0].setVelocity(5)
+        finger_motors[0].setPosition(0.004)
+        finger_sensors[0].enable(1)
+        for i in range(1000):
+            print(finger_sensors[0].getValue())
+            command_is_executing = True
+            if finger_sensors[0].getValue()+0.0005>=-0.005:
+                command_is_executing = False
+                continue
+            robot.step(1)
+        finger_sensors[0].disable()
+        current_task = "idle"
+        respond("done")
+
+    if current_task == "open_gripper":
+        finger_motors[1].setVelocity(5)
+        finger_motors[1].setPosition(0.045)
+        finger_motors[0].setVelocity(5)
+        finger_motors[0].setPosition(-0.035)
+        finger_sensors[0].enable(1)
+        for i in range(1000):
+            print(finger_sensors[0].getValue())
+            command_is_executing = True
+            if -0.35<=finger_sensors[0].getValue():
+                continue
+            robot.step(1)
+        finger_sensors[0].disable()
+        current_task = "idle"
+        respond("done")
+
+    if current_task == "movel":
         if not command_is_executing:
             trajectory.generate_trajectory(args["coords"], args["speed"])
             command_is_executing = True

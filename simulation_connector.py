@@ -187,6 +187,25 @@ class SimulationConnector:
         pil_img.show()
         return np.asarray(pil_img)
 
+    def gripper_handler(self, option):
+        if option == 1:
+            cmd = {"name" : "open_gripper", "args" : {}}
+            self._execute_remote_command(cmd)
+        elif option == 0:
+            cmd = {"name" : "close_gripper", "args" : {}}
+            self._execute_remote_command(cmd)
+        else:
+            raise Exception("wrong option for gripper: " + option)
+
+    def suction_handler(self, option):
+        if option == 1:
+            cmd = {"name" : "suction_on", "args" : {}}
+            self._execute_remote_command(cmd)
+        elif option == 0:
+            cmd = {"name" : "suction_off", "args" : {}}
+            self._execute_remote_command(cmd)
+        else:
+            raise Exception("wrong option for suction: " + option)
     def get_depth(self):
         cmd = {"name": "get_depth", "args": {}}
         np_img = self._execute_remote_command(cmd)
@@ -200,6 +219,14 @@ class SimulationConnector:
 
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
+    camera = SimulationConnector(2001)
+    connector.gripper_handler(0)
+    #connector.get_image()
+    #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
+    connector.movej([1.57,-1.76,-1.63,-1.26,1.57,1.05], 1)
+    connector.gripper_handler(1)
+    #connector.suction_handler(1)
+    #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
     connector.move_to_home()
     connector.set_tcp(connector.gripper_tcp)
     connector.move_out_of_view()

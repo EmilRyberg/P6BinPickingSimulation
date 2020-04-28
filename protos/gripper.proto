@@ -9,32 +9,40 @@
     rotation IS rotation
     scale IS scale
     children [
-    SliderJoint {
-      jointParameters DEF right_slider JointParameters {
-        position -0.035
+      DEF left SliderJoint {
+        jointParameters JointParameters {
+        position 0.045
         axis 1 0 0
-        minStop -0.035
       }
       device [
-        DEF right_slider LinearMotor {
+        LinearMotor {
+        name "left_finger_motor"
+            maxForce 100
+        }
+        PositionSensor {
+        name "left_finger_sensor"
+        }
+      ]
+      endPoint left_finger {
+        translation 0.045 0 0
+      }
+    }
+        DEF right SliderJoint {
+        jointParameters JointParameters {
+        position -0.035
+        axis 1 0 0
+      }
+      device [
+        LinearMotor {
+        name "right_finger_motor"
+        maxForce 100
+        }
+        PositionSensor {
+        name "right_finger_sensor"
         }
       ]
       endPoint right_finger {
         translation -0.035 0 0
-      }
-    }
-    SliderJoint {
-      jointParameters DEF left_slider JointParameters {
-        position 0.035
-        axis 1 0 0
-        maxStop 0.035
-      }
-      device [
-        DEF left_slider LinearMotor {
-        }
-      ]
-      endPoint left_finger {
-        translation 0.035 0 0
       }
     }
     Shape {

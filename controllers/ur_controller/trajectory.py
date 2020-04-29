@@ -66,6 +66,7 @@ class Trajectory:
             if self.current_step == self.total_steps:
                 self.is_done = True
             computed_angles = self.ikin.compute_joint_angles(transformation_matrix_06, self.config_id)
+            computed_angles_copy = computed_angles.copy()
             for i in range(6):
                 computed_angles[i] -= 6.28
                 difference = abs(computed_angles[i] - self.last_computed_angles[i])
@@ -76,7 +77,7 @@ class Trajectory:
                     limit += 1
                 if limit >= 3:
                     print("computed, last computed")
-                    print(computed_angles)
+                    print(computed_angles_copy)
                     print(self.last_computed_angles)
                     raise Exception("something went wrong")
             print(computed_angles)

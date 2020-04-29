@@ -23,7 +23,8 @@ class SimulationConnector:
         self.default_orientation = [0, 0, 0]
         self.gripper_tcp = [0, 0, 0.201, 2.9024, -1.2023, 0]
         self.fuse_tcp = [0.057, -0.00109, 0.13215, -1.7600, -0.7291, 1.7601]
-        self.suction_tcp = [-0.12, 0, 0.095, 0, -1.5707, 0]
+        #self.suction_tcp_real = [-0.12, 0, 0.095, 0, -1.57, 0]
+        self.suction_tcp = [0, 0.18, 0.095, 1.57, 0, 0]
         self.current_part_id = None
         self.grip_has_been_called_flag = False
         self.moved_to_camera_flag = False
@@ -160,12 +161,12 @@ class SimulationConnector:
         self.movej(self.move_out_of_view_pose, acc=1.0, vel=speed)
 
     def open_gripper(self, width=100):
-        #WIP
-        pass
+        cmd = {"name": "open_gripper", "args": {}}
+        self._execute_remote_command(cmd)
 
     def close_gripper(self, width=0):
-        #WIP
-        pass
+        cmd = {"name": "close_gripper", "args": {}}
+        self._execute_remote_command(cmd)
 
     def move_gripper(self, width):
         #WIP
@@ -187,25 +188,6 @@ class SimulationConnector:
         pil_img.show()
         return np.asarray(pil_img)
 
-    def gripper_handler(self, option):
-        if option == 1:
-            cmd = {"name" : "open_gripper", "args" : {}}
-            self._execute_remote_command(cmd)
-        elif option == 0:
-            cmd = {"name" : "close_gripper", "args" : {}}
-            self._execute_remote_command(cmd)
-        else:
-            raise Exception("wrong option for gripper: " + option)
-
-    def suction_handler(self, option):
-        if option == 1:
-            cmd = {"name" : "suction_on", "args" : {}}
-            self._execute_remote_command(cmd)
-        elif option == 0:
-            cmd = {"name" : "suction_off", "args" : {}}
-            self._execute_remote_command(cmd)
-        else:
-            raise Exception("wrong option for suction: " + option)
     def get_depth(self):
         cmd = {"name": "get_depth", "args": {}}
         np_img = self._execute_remote_command(cmd)
@@ -219,17 +201,11 @@ class SimulationConnector:
 
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
-    camera = SimulationConnector(2001)
-    connector.gripper_handler(0)
-    #connector.get_image()
-    #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
-    connector.movej([1.57,-1.76,-1.63,-1.26,1.57,1.05], 1)
-    connector.gripper_handler(1)
-    #connector.suction_handler(1)
-    #connector.movel([-0.25, 0.30, 1.11, 0.5, -1.5, 0.5], 0.3)
     connector.move_to_home()
-    connector.set_tcp(connector.gripper_tcp)
     connector.move_out_of_view()
     connector.get_image()
     connector.get_depth()
+    connector.set_tcp(connector.suction_tcp)
+    connector.movel([-380.7, -278.2, 400, 0, 0, 0], vel=0.5)
+
     time.sleep(10)

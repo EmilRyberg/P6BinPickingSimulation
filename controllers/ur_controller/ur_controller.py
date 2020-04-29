@@ -78,13 +78,14 @@ finger_sensors = [robot.getPositionSensor("right_finger_sensor"), robot.getPosit
 
 for sensor in motor_sensors:
     sensor.enable(10)
+"""
 motors[0].setPosition(1.57)
 motors[1].setPosition(-2.14)
 motors[2].setPosition(-1.57)
 motors[3].setPosition(-1.01)
 motors[4].setPosition(1.57)
 motors[5].setPosition(1.05)
-motors[6].setPosition(0.35)
+motors[6].setPosition(0.35)"""
 first_run = True
 can_run = False
 time_passed = 0
@@ -163,7 +164,7 @@ while robot.step(timestep) != -1:
         current_task = "idle"
         respond("done")
 
-    if current_task == "close_gripper":
+    elif current_task == "close_gripper":
         finger_motors[1].setVelocity(5)
         finger_motors[1].setPosition(0.006)
         finger_motors[0].setVelocity(5)
@@ -180,7 +181,7 @@ while robot.step(timestep) != -1:
         current_task = "idle"
         respond("done")
 
-    if current_task == "open_gripper":
+    elif current_task == "open_gripper":
         finger_motors[1].setVelocity(5)
         finger_motors[1].setPosition(0.045)
         finger_motors[0].setVelocity(5)
@@ -196,7 +197,7 @@ while robot.step(timestep) != -1:
         current_task = "idle"
         respond("done")
 
-    if current_task == "movel":
+    elif current_task == "movel":
         if not command_is_executing:
             trajectory.generate_trajectory(args["coords"], args["speed"])
             command_is_executing = True

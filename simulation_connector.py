@@ -183,17 +183,19 @@ class SimulationConnector:
     def get_image(self):
         cmd = {"name": "get_image", "args": {}}
         np_img = self._execute_remote_command(cmd)
+        np_img = np_img.transpose((1,0,2))
         pil_img = pimg.fromarray(np_img)
-        pil_img = pil_img.transpose(pimg.FLIP_TOP_BOTTOM)
+        #pil_img = pil_img.transpose(pimg.FLIP_LEFT_RIGHT)
         pil_img.show()
         return np.asarray(pil_img)
 
     def get_depth(self):
         cmd = {"name": "get_depth", "args": {}}
         np_img = self._execute_remote_command(cmd)
+        np_img = np_img.transpose((1, 0))
         np_img = np_img * 100
         pil_img = pimg.fromarray(np_img)
-        pil_img = pil_img.transpose(pimg.FLIP_TOP_BOTTOM)
+        #pil_img = pil_img.transpose(pimg.FLIP_TOP_BOTTOM)
         pil_img.show()
         return np.asarray(pil_img)
 
@@ -202,7 +204,7 @@ class SimulationConnector:
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
     connector.move_to_home()
-    connector.move_out_of_view()
+    #connector.move_out_of_view()
     connector.get_image()
     connector.get_depth()
     connector.set_tcp(connector.suction_tcp)

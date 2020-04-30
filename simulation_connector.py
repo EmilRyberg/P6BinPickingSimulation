@@ -122,6 +122,7 @@ class SimulationConnector:
         cmd = {"name" : "movej", "args" : {}}
         cmd["args"]["angles"] = pose_local
         cmd["args"]["speed"] = vel
+        cmd["args"]["acc"] = -1
         self._execute_remote_command(cmd)
 
     def movel(self, pose, acc=1.0, vel=0.2, wait=None):
@@ -185,8 +186,7 @@ class SimulationConnector:
         np_img = self._execute_remote_command(cmd)
         np_img = np_img.transpose((1,0,2))
         pil_img = pimg.fromarray(np_img)
-        #pil_img = pil_img.transpose(pimg.FLIP_LEFT_RIGHT)
-        pil_img.show()
+        #pil_img.show()
         return np.asarray(pil_img)
 
     def get_depth(self):
@@ -195,8 +195,7 @@ class SimulationConnector:
         np_img = np_img.transpose((1, 0))
         np_img = np_img * 100
         pil_img = pimg.fromarray(np_img)
-        #pil_img = pil_img.transpose(pimg.FLIP_TOP_BOTTOM)
-        pil_img.show()
+        #pil_img.show()
         return np.asarray(pil_img)
 
 
@@ -204,10 +203,11 @@ class SimulationConnector:
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
     connector.move_to_home()
-    #connector.move_out_of_view()
-    connector.get_image()
-    connector.get_depth()
+    connector.move_out_of_view()
+    pimg.fromarray(connector.get_image()).show()
+    #connector.get_depth()
     connector.set_tcp(connector.suction_tcp)
-    connector.movel([-380.7, -278.2, 400, 0, 0, 0], vel=0.5)
+    #connector.movel([-380.7, -278.2, 400, 0, 0, 3.14], vel=0.3)
+    connector.movel([0, -300, 300, 0, 0, 0], vel=0.3)
 
     time.sleep(10)

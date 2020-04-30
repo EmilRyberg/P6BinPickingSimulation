@@ -58,7 +58,8 @@ class Trajectory:
     def calculate_step(self):
         if not self.is_done:
             self.current_step += 1
-            print("step "+str(self.current_step)+"/"+str(self.total_steps))
+            if self.current_step % 25 == 0:
+                print("step "+str(self.current_step)+"/"+str(self.total_steps))
             cart_pos = self.starting_cart_pos + (self.current_step / self.total_steps) * (self.goal_cart_pos - self.starting_cart_pos)
             r = self.slerp(self.current_step/self.total_steps)
             transformation_matrix_BT= Utils.trans_and_rot_to_tmat(cart_pos, r)
@@ -80,7 +81,7 @@ class Trajectory:
                     print(computed_angles_copy)
                     print(self.last_computed_angles)
                     raise Exception("something went wrong")
-            print(computed_angles)
+            #print(computed_angles)
             self.last_computed_angles = computed_angles
             return computed_angles
         else:

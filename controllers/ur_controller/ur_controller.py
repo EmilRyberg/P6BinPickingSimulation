@@ -143,6 +143,7 @@ while robot.step(timestep) != -1:
         if not command_is_executing:
             for i in range(6):
                 motors[i].setVelocity(args["speed"])
+                motors[i].setAcceleration(args["acc"])
                 motors[i].setPosition(args["angles"][i])
             command_is_executing = True
         else:
@@ -198,6 +199,10 @@ while robot.step(timestep) != -1:
         respond("done")
 
     elif current_task == "movel":
+        for i in range(6):
+            motors[i].setVelocity(3)
+            motors[i].setAcceleration(-1)
+            #motors[i].setControlPID(50, 3, 5)
         if not command_is_executing:
             trajectory.generate_trajectory(args["coords"], args["speed"])
             command_is_executing = True

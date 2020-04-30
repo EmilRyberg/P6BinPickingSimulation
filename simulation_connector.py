@@ -7,6 +7,7 @@ import pickle
 from PIL import Image as pimg
 import math
 from controllers.ur_controller.P6BinPicking.vision.surface_normal import SurfaceNormals
+from scipy.spatial.transform import Rotation
 
 class SimulationConnector:
     def __init__(self, port):
@@ -206,7 +207,6 @@ class SimulationConnector:
         return results
 
 
-
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
     connector.move_out_of_view()
@@ -220,7 +220,10 @@ if __name__ == '__main__':
     #print('first mask', results["instances"].pred_masks[0, ::].numpy().astype(np.uint8))
     first_mask = results["instances"].pred_masks[0, ::].numpy().astype(np.uint8)
     surface_normals = SurfaceNormals()
-    surface_normals.vector_normal(first_mask, np_depth_img, np_rgb_img)
+    normal_vector = surface_normals.vector_normal(first_mask, np_depth_img, np_rgb_img)
+    tool_direction = normal_vector * -1
+    matrix = Rotation.from_rotvec(tool_direction)
+
 
     connector.set_tcp(connector.suction_tcp)
 

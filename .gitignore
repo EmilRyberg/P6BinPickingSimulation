@@ -25,3 +25,5 @@ vision/*.avi
 *.json
 
 *.zip
+
+*.pth

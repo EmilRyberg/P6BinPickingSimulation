@@ -15,6 +15,7 @@ import time
 import struct
 import pickle
 from PIL import Image as pimg
+from P6BinPicking.vision.segmentation.detector import InstanceDetector
 np.set_printoptions(precision=4, suppress=True)
 
 def send_msg(msg):
@@ -103,6 +104,7 @@ command_is_executing = False
 print_once_flag = True
 rgb_enabled = False
 depth_enabled = False
+instance_detector = InstanceDetector("model_final_sim.pth")
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(('localhost', 2000))
@@ -163,7 +165,6 @@ while robot.step(timestep) != -1:
         suction.unlock()
         current_task = "idle"
         respond("done")
-
     elif current_task == "close_gripper":
         finger_motors[1].setVelocity(5)
         finger_motors[1].setPosition(0.006)
@@ -180,7 +181,6 @@ while robot.step(timestep) != -1:
         finger_sensors[0].disable()
         current_task = "idle"
         respond("done")
-
     elif current_task == "open_gripper":
         finger_motors[1].setVelocity(5)
         finger_motors[1].setPosition(0.045)
@@ -196,7 +196,6 @@ while robot.step(timestep) != -1:
         finger_sensors[0].disable()
         current_task = "idle"
         respond("done")
-
     elif current_task == "movel":
         if not command_is_executing:
             trajectory.generate_trajectory(args["coords"], args["speed"])
@@ -209,7 +208,6 @@ while robot.step(timestep) != -1:
                 command_is_executing = False
                 current_task = "idle"
                 respond("done")
-
     elif current_task == "getl":
         thetas = [0]*6
         for i in range(6):
@@ -252,7 +250,18 @@ while robot.step(timestep) != -1:
             current_task = "idle"
             cameraDepth.disable()
             depth_enabled = False
-
+    elif current_task == "inst_seg":
+        if not rgb_enabled:
+            cameraRGB.enable(timestep)
+            rgb_enabled = True
+        else:
+            np_img = np.array(cameraRGB.getImageArray(), dtype=np.uint8)
+            np_img = np_img.transpose((1, 0, 2))
+            results = instance_detector.predict(np_img)
+            respond("done", results)
+            current_task = "idle"
+            cameraRGB.disable()
+            rgb_enabled = False
     else:
         respond("Unknown command: " + current_task)
         raise Exception("Received unknown command: " + current_task)

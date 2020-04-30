@@ -6,6 +6,7 @@ import struct
 import pickle
 from PIL import Image as pimg
 import math
+from controllers.ur_controller.P6BinPicking.vision.surface_normal import SurfaceNormals
 
 class SimulationConnector:
     def __init__(self, port):
@@ -186,7 +187,7 @@ class SimulationConnector:
         np_img = np_img.transpose((1,0,2))
         pil_img = pimg.fromarray(np_img)
         #pil_img = pil_img.transpose(pimg.FLIP_LEFT_RIGHT)
-        pil_img.show()
+        #pil_img.show()
         return np.asarray(pil_img)
 
     def get_depth(self):
@@ -196,18 +197,31 @@ class SimulationConnector:
         np_img = np_img * 100
         pil_img = pimg.fromarray(np_img)
         #pil_img = pil_img.transpose(pimg.FLIP_TOP_BOTTOM)
-        pil_img.show()
+        #pil_img.show()
         return np.asarray(pil_img)
+
+    def get_instance_segmentation(self):
+        cmd = {"name": "inst_seg", "args": {}}
+        results = self._execute_remote_command(cmd)
+        return results
 
 
 
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
-    connector.move_to_home()
-    #connector.move_out_of_view()
-    connector.get_image()
-    connector.get_depth()
+    connector.move_out_of_view()
+    np_rgb_img = connector.get_image()
+    np_depth_img = connector.get_depth()
+    print(np_depth_img.shape)
+    results = connector.get_instance_segmentation()
+    #print('results', results["instances"])
+    #print('masks', results["instances"].pred_masks)
+    #print('masks', results["instances"].pred_masks.numpy().shape)
+    #print('first mask', results["instances"].pred_masks[0, ::].numpy().astype(np.uint8))
+    first_mask = results["instances"].pred_masks[0, ::].numpy().astype(np.uint8)
+    surface_normals = SurfaceNormals()
+    surface_normals.vector_normal(first_mask, np_depth_img, np_rgb_img)
+
     connector.set_tcp(connector.suction_tcp)
-    connector.movel([-380.7, -278.2, 400, 0, 0, 0], vel=0.5)
 
     time.sleep(10)

@@ -1,11 +1,14 @@
 import numpy as np
 import threading
 import socket
+import cv2
 import time
 import struct
 import pickle
 from PIL import Image as pimg
 import math
+from controllers.ur_controller.P6BinPicking.vision.box_detector import BoxDetector
+
 
 class SimulationConnector:
     def __init__(self, port):
@@ -13,6 +16,7 @@ class SimulationConnector:
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn.connect(('127.0.0.1', port))
         print("Connected on port " + str(port))
+        self.box_detector = BoxDetector()
 
 
         self.suction_enable_pin = 6
@@ -186,8 +190,10 @@ class SimulationConnector:
         np_img = self._execute_remote_command(cmd)
         np_img = np_img.transpose((1,0,2))
         pil_img = pimg.fromarray(np_img)
+        cv2_image = np.array(pil_img)
+        #cv2_image = cv2_image[:, :, ::-1].copy()
         #pil_img.show()
-        return np.asarray(pil_img)
+        return (np.asarray(pil_img), cv2_image)
 
     def get_depth(self):
         cmd = {"name": "get_depth", "args": {}}
@@ -198,16 +204,22 @@ class SimulationConnector:
         #pil_img.show()
         return np.asarray(pil_img)
 
+    def move_box(self):
+        x,image = self.get_image()
+        cv2.imshow("box_image", image)
+        box_location = self.box_detector.find_box(image)
+        print(box_location)
 
 
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
     connector.move_to_home()
     connector.move_out_of_view()
-    pimg.fromarray(connector.get_image()).show()
+    connector.move_box()
+    #pimg.fromarray(connector.get_image()).show()
     #connector.get_depth()
-    connector.set_tcp(connector.suction_tcp)
+    #connector.set_tcp(connector.suction_tcp)
     #connector.movel([-380.7, -278.2, 400, 0, 0, 3.14], vel=0.3)
-    connector.movel([0, -300, 300, 0, 0, 0], vel=0.3)
+    #connector.movel([0, -300, 300, 0, 0, 0], vel=0.3)
 
     time.sleep(10)

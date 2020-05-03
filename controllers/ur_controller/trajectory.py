@@ -62,10 +62,10 @@ class Trajectory:
             cart_pos = self.starting_cart_pos + (self.current_step / self.total_steps) * (self.goal_cart_pos - self.starting_cart_pos)
             r = self.slerp(self.current_step/self.total_steps)
             transformation_matrix_BT= Utils.trans_and_rot_to_tmat(cart_pos, r)
-            transformation_matrix_06 = self.fkin.convert_TBT_to_T06(transformation_matrix_BT)
+            transformation_matrix_06 = self.fkin.convert_TWorldT_to_T06(transformation_matrix_BT)
             if self.current_step == self.total_steps:
                 self.is_done = True
-            computed_angles = self.ikin.compute_joint_angles(transformation_matrix_06, self.config_id)
+            computed_angles = self.ikin.get_best_solution_for_config_id(transformation_matrix_06, self.config_id)
             computed_angles_copy = computed_angles.copy()
             for i in range(6):
                 computed_angles[i] -= 6.28

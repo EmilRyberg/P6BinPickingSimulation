@@ -112,7 +112,7 @@ server.listen()
 print("Waiting for connection")
 robot.step(1) # webots won't print without a step
 conn, addr = server.accept()
-#conn.settimeout(0.1)
+conn.settimeout(0.1)
 conn.setblocking(False)
 print("Connected")
 
@@ -155,12 +155,10 @@ while robot.step(timestep) != -1:
                 command_is_executing = False
                 current_task = "idle"
                 respond("done")
-
     elif current_task == "suction_on":
         suction.lock()
         current_task = "idle"
         respond("done")
-
     elif current_task == "suction_off":
         suction.unlock()
         current_task = "idle"

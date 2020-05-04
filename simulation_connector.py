@@ -274,7 +274,7 @@ if __name__ == '__main__':
     #TWorldT = np.identity(4)
     TWorldT[0, 3] = center[0] / 1000.0
     TWorldT[1, 3] = center[1] / 1000.0
-    TWorldT[2, 3] = center[2] / 1000.0 + 0.05
+    TWorldT[2, 3] = 0.3 # center[2] / 1000.0 + 0.2
     TWorldT[3, 3] = 1
     #connector.set_tcp(connector.suction_tcp)
     pose = connector.suction_tcp
@@ -282,7 +282,14 @@ if __name__ == '__main__':
     rotvec = [pose[3], pose[4], pose[5]]
     rot = Rotation.from_rotvec(rotvec)
     tmat = Utils.trans_and_rot_to_tmat(trans, rot)
-    #fkin.T6T = tmat
+    #[-0.12, 0, 0.095, 0, -1.57, 0]
+    c = np.cos(-np.pi / 2)
+    s = np.sin(-np.pi / 2)
+    suction_tcp = [[1, 0, 0, 0],
+                   [0, c, -s, 0.193],
+                   [0, s, c, 0.08],
+                   [0, 0, 0, 1]]
+    fkin.T6T = suction_tcp
     print('tworldt', TWorldT)
     T06 = fkin.convert_TBT_to_T06(TWorldT)
     angles = ikin.get_best_solution_for_config_id(T06, 0)

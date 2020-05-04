@@ -112,7 +112,7 @@ server.listen()
 print("Waiting for connection")
 robot.step(1) # webots won't print without a step
 conn, addr = server.accept()
-conn.settimeout(0.1)
+#conn.settimeout(0.1)
 conn.setblocking(False)
 print("Connected")
 

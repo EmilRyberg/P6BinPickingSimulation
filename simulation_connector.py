@@ -8,6 +8,7 @@ import pickle
 from PIL import Image as pimg
 import math
 from controllers.ur_controller.P6BinPicking.vision.box_detector import BoxDetector
+from controllers.ur_controller.P6BinPicking.aruco import Calibration
 
 
 class SimulationConnector:
@@ -17,6 +18,7 @@ class SimulationConnector:
         self.conn.connect(('127.0.0.1', port))
         print("Connected on port " + str(port))
         self.box_detector = BoxDetector()
+        self.calibration = Calibration()
 
 
         self.suction_enable_pin = 6
@@ -78,6 +80,14 @@ class SimulationConnector:
         self.camera_pose_suction = [-5, -40, -100, -140, 0, -170]
 
         self.pcb_singularity_avoidance = [-70, -70, -107, -180, -147, 90]
+
+        self.cover_finger_0 = 0.004 #positions for gripper motors
+        self.cover_finger_1 = 0.006
+        self.cover_grasped = -0.005
+        self.box_finger_0 = 0.005
+        self.box_finger_1 = 0.012
+        self.box_grasped = -0.005
+        self.first_box_move = 0
 
     def __del__(self):
         self.conn.close()
@@ -169,9 +179,18 @@ class SimulationConnector:
         cmd = {"name": "open_gripper", "args": {}}
         self._execute_remote_command(cmd)
 
-    def close_gripper(self, width=0):
+    def close_gripper(self, finger_0_position, finger_1_position, closed_threshold):
         cmd = {"name": "close_gripper", "args": {}}
+        cmd["args"]["finger_0"] = finger_0_position
+        cmd["args"]["finger_1"] = finger_1_position
+        cmd["args"]["closed"] = closed_threshold
         self._execute_remote_command(cmd)
+
+    def grasp_cover(self):
+        self.close_gripper(self.cover_finger_0,self.cover_finger_1,self.cover_grasped)
+
+    def grasp_box(self):
+        self.close_gripper(self.box_finger_0, self.box_finger_1, self.box_grasped)
 
     def move_gripper(self, width):
         #WIP
@@ -191,7 +210,7 @@ class SimulationConnector:
         np_img = np_img.transpose((1,0,2))
         pil_img = pimg.fromarray(np_img)
         cv2_image = np.array(pil_img)
-        #cv2_image = cv2_image[:, :, ::-1].copy()
+        cv2_image = cv2_image[:, :, ::-1].copy()
         #pil_img.show()
         return (np.asarray(pil_img), cv2_image)
 
@@ -205,10 +224,33 @@ class SimulationConnector:
         return np.asarray(pil_img)
 
     def move_box(self):
-        x,image = self.get_image()
-        cv2.imshow("box_image", image)
+        pil,image = self.get_image()
+        #cv2.imshow("box_image", image)
+        #cv2.waitKey()
         box_location = self.box_detector.find_box(image)
-        print(box_location)
+        grasp_x = box_location[2][0]+int(((box_location[3][0]-box_location[2][0])/2))
+        grasp_y = box_location[2][1]+int(((box_location[3][1]-box_location[2][1])/2))
+        vector = [box_location[3][0]-box_location[2][0], box_location[3][1]-box_location[2][1]]
+        box_start_vector = [0, -483] #hardcoded
+        dot_product = np.array(box_start_vector) @ np.array(vector)
+        norm_dot_product = np.linalg.norm(np.array(box_start_vector) * np.linalg.norm(np.array(vector)))
+        angle = np.arccos(dot_product / norm_dot_product)
+        #print(angle)
+        #print(grasp_x,grasp_y)
+        grasp_location = self.calibration.calibrate(pil,grasp_x,grasp_y, 130)
+        self.set_tcp(self.gripper_tcp)
+        self.move_to_home()
+        self.movel([grasp_location[0], grasp_location[1], grasp_location[2]+20, 0, 0, 3.14-angle])
+        self.movel([grasp_location[0], grasp_location[1], grasp_location[2]-80, 0, 0, 3.14-angle])
+        self.grasp_box()
+        if self.first_box_move == 0:
+            self.movel([grasp_location[0] + 15, grasp_location[1] + 15, grasp_location[2] + 20, 0, 0, 3.14])
+            self.first_box_move = 1
+        else:
+            self.movel([grasp_location[0]-15, grasp_location[1]-15, grasp_location[2]+20, 0, 0, 3.14])
+            self.first_box_move = 0
+        self.open_gripper()
+        #print(grasp_location)
 
 
 if __name__ == '__main__':

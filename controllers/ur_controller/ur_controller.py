@@ -167,14 +167,14 @@ while robot.step(timestep) != -1:
 
     elif current_task == "close_gripper":
         finger_motors[1].setVelocity(5)
-        finger_motors[1].setPosition(0.006)
+        finger_motors[1].setPosition(args["finger_1"])
         finger_motors[0].setVelocity(5)
-        finger_motors[0].setPosition(0.004)
+        finger_motors[0].setPosition(args["finger_0"])
         finger_sensors[0].enable(1)
-        for i in range(1000):
+        for i in range(500):
             print(finger_sensors[0].getValue())
             command_is_executing = True
-            if finger_sensors[0].getValue()+0.0005>=-0.005:
+            if finger_sensors[0].getValue()+0.0005>=args["closed"]:
                 command_is_executing = False
                 continue
             robot.step(1)

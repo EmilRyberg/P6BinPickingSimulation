@@ -24,6 +24,10 @@ class ForwardKinematics(Kinematics):
                     [0, 0, 1, 0],
                     [0, 0, 0, 1]]
         self.T0B = np.linalg.inv(self.TB0)
+        self.ARUCO_TO_B = [[0.707, 0.707 * np.cos(0.5 * np.pi),  -0.707 * np.sin(0.5 * np.pi), 0],
+                           [-0.707, 0.707 * np.cos(0.5 * np.pi), -0.707 * np.sin(0.5 * np.pi), 0],
+                           [0, np.sin(0.5 * np.pi), np.cos(0.5 * np.pi), 0],
+                           [0, 0, 0, 1]]
     def compute_0_to_6_matrix(self, thetas):
         T01 = self.compute_transformation_matrix(thetas[0], self.joint1_dh)
         T12 = self.compute_transformation_matrix(thetas[1], self.joint2_dh)

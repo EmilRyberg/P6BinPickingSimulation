@@ -1,3 +1,7 @@
+import sys
+sys.path.append('controllers/ur_controller')
+sys.path.append('controllers/ur_controller/P6BinPicking')
+
 import numpy as np
 import threading
 import socket
@@ -6,6 +10,13 @@ import struct
 import pickle
 from PIL import Image as pimg
 import math
+from controllers.ur_controller.P6BinPicking.vision.surface_normal import SurfaceNormals
+from scipy.spatial.transform import Rotation
+
+from controllers.ur_controller.kinematics.forward import ForwardKinematics
+from controllers.ur_controller.kinematics.inverse import InverseKinematics
+from controllers.ur_controller.utils import Utils
+
 
 class SimulationConnector:
     def __init__(self, port):
@@ -13,7 +24,6 @@ class SimulationConnector:
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn.connect(('127.0.0.1', port))
         print("Connected on port " + str(port))
-
 
         self.suction_enable_pin = 6
         self.home_pose_l = [35, -300, 300, 0, 0, -0.8]
@@ -23,16 +33,21 @@ class SimulationConnector:
         self.default_orientation = [0, 0, 0]
         self.gripper_tcp = [0, 0, 0.201, 2.9024, -1.2023, 0]
         self.fuse_tcp = [0.057, -0.00109, 0.13215, -1.7600, -0.7291, 1.7601]
-        #self.suction_tcp_real = [-0.12, 0, 0.095, 0, -1.57, 0]
-        self.suction_tcp = [0, 0.18, 0.095, 1.57, 0, 0]
+        # self.suction_tcp_real = [-0.12, 0, 0.095, 0, -1.57, 0]
+        #self.suction_tcp = [0, 0.18, 0.095, 1.57, 0, 0]
+        self.suction_tcp = [0, 0.193, 0.08, -np.pi/2, 0, 0]
         self.current_part_id = None
         self.grip_has_been_called_flag = False
         self.moved_to_camera_flag = False
 
-        self.align_fuse_point_1 = [258.3808266269915, 182.66080196127277, 50.755338740619685, 0.5129225399673327, -0.5681073061405235, -0.021312928850932115]
-        self.align_fuse_point_2 = [269.56669707049855, 192.5271576116136, 36.52450508933613, 0.5352153513500437, -0.5851532800726972, -0.022296119825804664]
-        self.align_fuse_point_3 = [256.79863096450663, 180.323917259804, 38.04563142826764, 0.5128000908988749, -0.5681263381546497, -0.021276095366553276]
-        self.align_fuse_point_4 = [267.24826717836964, 189.57576475222854, 23.53934054782497, 0.5129307828342723, -0.5681049276113338, -0.02124040568020565]
+        self.align_fuse_point_1 = [258.3808266269915, 182.66080196127277, 50.755338740619685, 0.5129225399673327,
+                                   -0.5681073061405235, -0.021312928850932115]
+        self.align_fuse_point_2 = [269.56669707049855, 192.5271576116136, 36.52450508933613, 0.5352153513500437,
+                                   -0.5851532800726972, -0.022296119825804664]
+        self.align_fuse_point_3 = [256.79863096450663, 180.323917259804, 38.04563142826764, 0.5128000908988749,
+                                   -0.5681263381546497, -0.021276095366553276]
+        self.align_fuse_point_4 = [267.24826717836964, 189.57576475222854, 23.53934054782497, 0.5129307828342723,
+                                   -0.5681049276113338, -0.02124040568020565]
 
         self.align_pcb_1 = [2, -62, -108, -97, 89, 46]  # joint values
         self.align_pcb_2 = [381, -12, 272, 0.61, -1.51, 0.64]  # Cartesian coordinates
@@ -113,13 +128,14 @@ class SimulationConnector:
             print("cmd done")
         return response["data"]
 
-    def movej(self, pose, acc=1.0, vel=0.1, wait=None):
+    def movej(self, pose, acc=1.0, vel=0.1, degrees=True, wait=None):
         pose_local = pose.copy()
-        #print("pose in deg: ", pose_local)
-        for i in range(6):
-            pose_local[i] = math.radians(pose_local[i])
-        #print("pose in radians: ", pose_local)
-        cmd = {"name" : "movej", "args" : {}}
+        # print("pose in deg: ", pose_local)
+        if degrees:
+            for i in range(6):
+                pose_local[i] = math.radians(pose_local[i])
+        # print("pose in radians: ", pose_local)
+        cmd = {"name": "movej", "args": {}}
         cmd["args"]["angles"] = pose_local
         cmd["args"]["speed"] = vel
         cmd["args"]["acc"] = -1
@@ -131,8 +147,8 @@ class SimulationConnector:
         pose_local[0] *= 0.001
         pose_local[1] *= 0.001
         pose_local[2] *= 0.001
-        #print(pose_local)
-        cmd = {"name" : "movel", "args" : {}}
+        # print(pose_local)
+        cmd = {"name": "movel", "args": {}}
         cmd["args"]["coords"] = pose_local
         cmd["args"]["speed"] = vel
         self._execute_remote_command(cmd)
@@ -170,21 +186,21 @@ class SimulationConnector:
         self._execute_remote_command(cmd)
 
     def move_gripper(self, width):
-        #WIP
+        # WIP
         pass
 
     def enable_suction(self):
-        cmd = {"name" : "suction_on", "args" : {}}
+        cmd = {"name": "suction_on", "args": {}}
         self._execute_remote_command(cmd)
 
     def disable_suction(self):
-        cmd = {"name" : "suction_off", "args" : {}}
+        cmd = {"name": "suction_off", "args": {}}
         self._execute_remote_command(cmd)
 
     def get_image(self):
         cmd = {"name": "get_image", "args": {}}
         np_img = self._execute_remote_command(cmd)
-        np_img = np_img.transpose((1,0,2))
+        np_img = np_img.transpose((1, 0, 2))
         pil_img = pimg.fromarray(np_img)
         #pil_img.show()
         return np.asarray(pil_img)
@@ -198,16 +214,53 @@ class SimulationConnector:
         #pil_img.show()
         return np.asarray(pil_img)
 
+    def get_instance_segmentation(self):
+        cmd = {"name": "inst_seg", "args": {}}
+        results = self._execute_remote_command(cmd)
+        return results
+
+
+def angle_axis_to_rotation_matrix(angle_axis):
+    c = np.cos(angle_axis[3])
+    s = np.sin(angle_axis[3])
+    t = 1 - c
+    x = angle_axis[0]
+    y = angle_axis[1]
+    z = angle_axis[2]
+    print('aa', angle_axis)
+    rot = [[t * x ** 2 + c, t * x * y - z * s, t * x * z + y * s],
+           [t * x * y + z * s, t * y ** 2 + c, t * y * z - x * s],
+           [t * x * z - y * s, t * y * z + x * s, t * z ** 2 + c]]
+    print('a', rot)
+    return np.array(rot)
 
 
 if __name__ == '__main__':
+    ikin = InverseKinematics()
+    fkin = ForwardKinematics()
     connector = SimulationConnector(2000)
-    connector.move_to_home()
     connector.move_out_of_view()
-    pimg.fromarray(connector.get_image()).show()
-    #connector.get_depth()
-    connector.set_tcp(connector.suction_tcp)
-    #connector.movel([-380.7, -278.2, 400, 0, 0, 3.14], vel=0.3)
-    connector.movel([0, -300, 300, 0, 0, 0], vel=0.3)
+    np_rgb_img = connector.get_image()
+    np_depth_img = connector.get_depth()
+    results = connector.get_instance_segmentation()
+    first_mask = results["instances"].pred_masks[0, ::].numpy().astype(np.uint8)
+    surface_normals = SurfaceNormals()
+    center, rotation_matrix = surface_normals.get_tool_orientation_matrix(first_mask, np_depth_img, np_rgb_img)
+    TBT = np.pad(rotation_matrix, ((0, 1), (0, 1)))
+    TBT[0, 3] = center[0] / 1000.0
+    TBT[1, 3] = center[1] / 1000.0
+    TBT[2, 3] = 0.3 # center[2] / 1000.0 + 0.2
+    TBT[3, 3] = 1
+    #connector.set_tcp(connector.suction_tcp)
+    pose = connector.suction_tcp
+    trans = [pose[0], pose[1], pose[2]]
+    rotvec = [pose[3], pose[4], pose[5]]
+    rot = Rotation.from_rotvec(rotvec)
+    tmat = Utils.trans_and_rot_to_tmat(trans, rot)
+    fkin.T6T = tmat
+    T06 = fkin.convert_TBT_to_T06(TBT)
+    angles = ikin.get_best_solution_for_config_id(T06, 0)
+
+    connector.movej(angles, acc=2, vel=0.5, degrees=False)
 
     time.sleep(10)

@@ -184,7 +184,7 @@ class InverseKinematics(Kinematics):
                     print(
                         f"Shoulder right, wrist down, elbow down: {solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.thetas}")
 
-    def compute_joint_angles(self, T06, config_id=-1, debug=False):
+    def compute_joint_angles(self, T06, debug=False):
         solution = InverseKinematicsSolution()
 
         #Theta 1
@@ -206,27 +206,71 @@ class InverseKinematics(Kinematics):
         if debug:
             self.__print_all_solutions(solution)
 
-        if config_id == -1:
-            return solution
+        return solution
+
+    def get_solution_for_config_id(self, solution, config_id):
+        if config_id == 0:
+            return solution.solution_shoulder_left.solution_wrist_up.solution_elbow_up.thetas
+        elif config_id == 1:
+            return solution.solution_shoulder_left.solution_wrist_up.solution_elbow_down.thetas
+        elif config_id == 2:
+            return solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.thetas
+        elif config_id == 3:
+            return solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down.thetas
+        elif config_id == 4:
+            return solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.thetas
+        elif config_id == 5:
+            return solution.solution_shoulder_right.solution_wrist_up.solution_elbow_down.thetas
+        elif config_id == 6:
+            return solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.thetas
+        elif config_id == 7:
+            return solution.solution_shoulder_right.solution_wrist_down.solution_elbow_down.thetas
         else:
-            if config_id == 0:
-                return solution.solution_shoulder_left.solution_wrist_up.solution_elbow_up.thetas
-            elif config_id == 1:
-                return solution.solution_shoulder_left.solution_wrist_up.solution_elbow_down.thetas
-            elif config_id == 2:
-                return solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.thetas
-            elif config_id == 3:
-                return solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down.thetas
-            elif config_id == 4:
-                return solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.thetas
-            elif config_id == 5:
-                return solution.solution_shoulder_right.solution_wrist_up.solution_elbow_down.thetas
-            elif config_id == 6:
-                return solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.thetas
-            elif config_id == 7:
-                return solution.solution_shoulder_right.solution_wrist_down.solution_elbow_down.thetas
-            else:
-                raise Exception("invalid config solution id")
+            raise Exception("invalid config solution id")
+
+    def get_best_solution_for_config_id(self, T06, config_id):
+        solution = self.compute_joint_angles(T06)
+        if self.is_valid_solution_by_config_id(solution, config_id):
+            return self.get_solution_for_config_id(solution, config_id)
+        else:
+            index = config_id + 1
+            checked_all = False
+            while not checked_all:
+                if index >= 8:
+                    index = 0
+                if index == config_id:
+                    print('Found no valid solutions..')
+                    return None
+                if self.is_valid_solution_by_config_id(solution, index):
+                    return self.get_solution_for_config_id(solution, index)
+                index += 1
+
+    def is_valid_solution_by_config_id(self, solution, config_id):
+        if 0 <= config_id < 4 and solution.solution_shoulder_left.is_valid_solution:
+            if 0 <= config_id < 2 and solution.solution_shoulder_left.solution_wrist_up.is_valid_solution:
+                if config_id == 0 and solution.solution_shoulder_left.solution_wrist_up.solution_elbow_up.is_valid_solution:
+                    return True
+                if config_id == 1 and solution.solution_shoulder_left.solution_wrist_up.solution_elbow_down.is_valid_solution:
+                    return True
+            if 2 <= config_id < 4 and solution.solution_shoulder_left.solution_wrist_down.is_valid_solution:
+                if config_id == 2 and solution.solution_shoulder_left.solution_wrist_down.solution_elbow_up.is_valid_solution:
+                    return True
+                if config_id == 3 and solution.solution_shoulder_left.solution_wrist_down.solution_elbow_down:
+                    return True
+        if 4 <= config_id < 8 and solution.solution_shoulder_right.is_valid_solution:
+            if 4 <= config_id < 6 and solution.solution_shoulder_right.solution_wrist_up.is_valid_solution:
+                if config_id == 4 and solution.solution_shoulder_right.solution_wrist_up.solution_elbow_up.is_valid_solution:
+                    return True
+                if config_id == 5 and solution.solution_shoulder_right.solution_wrist_up.solution_elbow_down.is_valid_solution:
+                    return True
+            if 6 <= config_id < 8 and solution.solution_shoulder_right.solution_wrist_down.is_valid_solution:
+                if config_id == 6 and solution.solution_shoulder_right.solution_wrist_down.solution_elbow_up.is_valid_solution:
+                    return True
+                if config_id == 7 and solution.solution_shoulder_right.solution_wrist_down.solution_elbow_down.is_valid_solution:
+                    return True
+        else:
+            return False
+
 
     def get_current_configuration_id(self, joint_angles):
         T06 = self.forward_kinematics.compute_0_to_6_matrix(joint_angles)

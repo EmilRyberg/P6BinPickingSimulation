@@ -1,3 +1,7 @@
+import sys
+sys.path.append('controllers/ur_controller')
+sys.path.append('controllers/ur_controller/P6BinPicking')
+
 import numpy as np
 import threading
 import socket
@@ -9,8 +13,8 @@ import math
 from controllers.ur_controller.P6BinPicking.vision.surface_normal import SurfaceNormals
 from scipy.spatial.transform import Rotation
 
-from kinematics.forward import ForwardKinematics
-from kinematics.inverse import InverseKinematics
+from controllers.ur_controller.kinematics.forward import ForwardKinematics
+from controllers.ur_controller.kinematics.inverse import InverseKinematics
 from controllers.ur_controller.utils import Utils
 
 
@@ -30,7 +34,8 @@ class SimulationConnector:
         self.gripper_tcp = [0, 0, 0.201, 2.9024, -1.2023, 0]
         self.fuse_tcp = [0.057, -0.00109, 0.13215, -1.7600, -0.7291, 1.7601]
         # self.suction_tcp_real = [-0.12, 0, 0.095, 0, -1.57, 0]
-        self.suction_tcp = [0, 0.18, 0.095, 1.57, 0, 0]
+        #self.suction_tcp = [0, 0.18, 0.095, 1.57, 0, 0]
+        self.suction_tcp = [0, 0.193, 0.08, -np.pi/2, 0, 0]
         self.current_part_id = None
         self.grip_has_been_called_flag = False
         self.moved_to_camera_flag = False
@@ -238,70 +243,25 @@ if __name__ == '__main__':
     connector.move_out_of_view()
     np_rgb_img = connector.get_image()
     np_depth_img = connector.get_depth()
-    print(np_depth_img.shape)
     results = connector.get_instance_segmentation()
-    # print('results', results["instances"])
-    # print('masks', results["instances"].pred_masks)
-    # print('masks', results["instances"].pred_masks.numpy().shape)
-    # print('first mask', results["instances"].pred_masks[0, ::].numpy().astype(np.uint8))
     first_mask = results["instances"].pred_masks[0, ::].numpy().astype(np.uint8)
     surface_normals = SurfaceNormals()
-    center, normal_vector = surface_normals.vector_normal(first_mask, np_depth_img, np_rgb_img)
-    tool_direction = normal_vector * -1
-    print('tool', tool_direction.reshape((3, 1)))
-    s = np.sin(np.pi / 2)
-    c = np.cos(np.pi / 2)
-    s2 = np.sin(-np.pi / 2)
-    c2 = np.cos(-np.pi / 2)
-    Ry = np.array([[c, 0, s],
-                   [0, 1, 0],
-                   [-s, 0, c]])
-    Rz = np.array([[c2, -s2, 0],
-                   [s2, c2, 0],
-                   [0, 0, 1]])
-    x_vector = np.dot(Ry, tool_direction)
-    x_vector = x_vector / np.linalg.norm(x_vector)
-    y_vector = np.dot(Rz, x_vector)
-    y_vector = y_vector / np.linalg.norm(y_vector)
-    # x_vector = np.cross(np.array([0, 1, 0]), tool_direction)
-    # x_vector = x_vector / np.linalg.norm(x_vector)
-    # y_vector = np.cross(tool_direction, x_vector)
-    # y_vector = y_vector / np.linalg.norm(y_vector)
-    matrix = np.append(x_vector.reshape((3, 1)), y_vector.reshape((3, 1)), axis=1)
-    matrix = np.append(matrix, tool_direction.reshape((3, 1)), axis=1)
-    print('matrix', matrix)
-    TWorldT = np.pad(matrix, ((0, 1), (0, 1)))
-    #TWorldT = np.identity(4)
-    TWorldT[0, 3] = center[0] / 1000.0
-    TWorldT[1, 3] = center[1] / 1000.0
-    TWorldT[2, 3] = 0.3 # center[2] / 1000.0 + 0.2
-    TWorldT[3, 3] = 1
+    center, rotation_matrix = surface_normals.get_tool_orientation_matrix(first_mask, np_depth_img, np_rgb_img)
+    TBT = np.pad(rotation_matrix, ((0, 1), (0, 1)))
+    TBT[0, 3] = center[0] / 1000.0
+    TBT[1, 3] = center[1] / 1000.0
+    TBT[2, 3] = 0.3 # center[2] / 1000.0 + 0.2
+    TBT[3, 3] = 1
     #connector.set_tcp(connector.suction_tcp)
     pose = connector.suction_tcp
     trans = [pose[0], pose[1], pose[2]]
     rotvec = [pose[3], pose[4], pose[5]]
     rot = Rotation.from_rotvec(rotvec)
     tmat = Utils.trans_and_rot_to_tmat(trans, rot)
-    #[-0.12, 0, 0.095, 0, -1.57, 0]
-    c = np.cos(-np.pi / 2)
-    s = np.sin(-np.pi / 2)
-    suction_tcp = [[1, 0, 0, 0],
-                   [0, c, -s, 0.193],
-                   [0, s, c, 0.08],
-                   [0, 0, 0, 1]]
-    fkin.T6T = suction_tcp
-    print('tworldt', TWorldT)
-    T06 = fkin.convert_TBT_to_T06(TWorldT)
+    fkin.T6T = tmat
+    T06 = fkin.convert_TBT_to_T06(TBT)
     angles = ikin.get_best_solution_for_config_id(T06, 0)
-    print('solution', angles)
-    pseudo_vector = Rotation.from_matrix(matrix).as_rotvec()
 
-    print('vector', pseudo_vector)
-
-    # print('moving to', [center[0], center[1], center[2], normal_vector[0], normal_vector[1], normal_vector[2]])
-    # inverse_solution = InverseKinematics().compute_joint_angles([center[0], center[1], center[2] + 1000, normal_vector[0], normal_vector[1], normal_vector[2]]))
-    #connector.movel([center[0], center[1], 400, pseudo_vector[0], pseudo_vector[1], pseudo_vector[2]])
     connector.movej(angles, acc=2, vel=0.5, degrees=False)
-    # connector.movel([center[0], center[1], center[2], normal_vector[0], normal_vector[1], normal_vector[2]])
 
     time.sleep(10)

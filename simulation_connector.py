@@ -12,7 +12,6 @@ import pickle
 from PIL import Image as pimg
 import math
 from controllers.ur_controller.P6BinPicking.vision.box_detector import BoxDetector
-from controllers.ur_controller.P6BinPicking.aruco import Calibration
 from controllers.ur_controller.P6BinPicking.vision.surface_normal import SurfaceNormals
 from scipy.spatial.transform import Rotation
 
@@ -28,8 +27,6 @@ class SimulationConnector:
         self.conn.connect(('127.0.0.1', port))
         print("Connected on port " + str(port))
         self.box_detector = BoxDetector()
-        self.calibration = Calibration()
-
         self.suction_enable_pin = 6
         self.home_pose_l = [35, -300, 300, 0, 0, -0.8]
         self.home_pose = [-60, -60, -110, -100, 90, -60]
@@ -237,21 +234,12 @@ class SimulationConnector:
         cmd = {"name": "inst_seg", "args": {}}
         results = self._execute_remote_command(cmd)
         return results
+
     def move_box(self):
         pil,image = self.get_image()
         #cv2.imshow("box_image", image)
         #cv2.waitKey()
-        box_location = self.box_detector.find_box(image)
-        grasp_x = box_location[2][0]+int(((box_location[3][0]-box_location[2][0])/2))
-        grasp_y = box_location[2][1]+int(((box_location[3][1]-box_location[2][1])/2))
-        vector = [box_location[3][0]-box_location[2][0], box_location[3][1]-box_location[2][1]]
-        box_start_vector = [0, -483] #hardcoded
-        dot_product = np.array(box_start_vector) @ np.array(vector)
-        norm_dot_product = np.linalg.norm(np.array(box_start_vector) * np.linalg.norm(np.array(vector)))
-        angle = np.arccos(dot_product / norm_dot_product)
-        #print(angle)
-        #print(grasp_x,grasp_y)
-        grasp_location = self.calibration.calibrate(pil,grasp_x,grasp_y, 130)
+        grasp_location, angle = self.box_detector.box_grasp_location(image,pil)
         self.set_tcp(self.gripper_tcp)
         self.move_to_home()
         self.movel([grasp_location[0], grasp_location[1], grasp_location[2]+20, 0, 0, 3.14-angle])
@@ -287,27 +275,12 @@ if __name__ == '__main__':
     fkin = ForwardKinematics()
     connector = SimulationConnector(2000)
     connector.move_out_of_view()
-    np_rgb_img = connector.get_image()
-    np_depth_img = connector.get_depth()
-    results = connector.get_instance_segmentation()
-    first_mask = results["instances"].pred_masks[0, ::].numpy().astype(np.uint8)
-    surface_normals = SurfaceNormals()
-    center, rotation_matrix = surface_normals.get_tool_orientation_matrix(first_mask, np_depth_img, np_rgb_img)
-    TBT = np.pad(rotation_matrix, ((0, 1), (0, 1)))
-    TBT[0, 3] = center[0] / 1000.0
-    TBT[1, 3] = center[1] / 1000.0
-    TBT[2, 3] = 0.3 # center[2] / 1000.0 + 0.2
-    TBT[3, 3] = 1
-    #connector.set_tcp(connector.suction_tcp)
-    pose = connector.suction_tcp
-    trans = [pose[0], pose[1], pose[2]]
-    rotvec = [pose[3], pose[4], pose[5]]
-    rot = Rotation.from_rotvec(rotvec)
-    tmat = Utils.trans_and_rot_to_tmat(trans, rot)
-    fkin.T6T = tmat
-    T06 = fkin.convert_TBT_to_T06(TBT)
-    angles = ikin.get_best_solution_for_config_id(T06, 0)
+    box = BoxDetector()
+    #img, cv2 = connector.get_image()
+    #box.get_average_pixel_value(cv2)
+    connector.move_box()
 
-    connector.movej(angles, acc=2, vel=0.5, degrees=False)
+
+
 
     time.sleep(10)

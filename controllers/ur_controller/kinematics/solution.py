@@ -15,9 +15,7 @@ class InverseKinematicsWristSolution:
     def __init__(self):
         self.is_valid_solution = True
         self.solution_wrist_up = InverseKinematicsShoulderSolution()
-        self.solution_wrist_up.is_valid_solution = False
         self.solution_wrist_down = InverseKinematicsShoulderSolution()
-        self.solution_wrist_down.is_valid_solution = False
 
 
 class InverseKinematicsSolution:

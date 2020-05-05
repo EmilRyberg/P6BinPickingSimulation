@@ -4,6 +4,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation, Slerp
 from utils import Utils
 
+
 class Trajectory:
     def __init__(self, motor_sensors, fkin, timestep):
         self.motor_sensors = motor_sensors

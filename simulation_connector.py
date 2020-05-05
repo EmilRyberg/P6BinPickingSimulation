@@ -223,20 +223,15 @@ class SimulationConnector:
         cmd = {"name": "get_image", "args": {}}
         np_img = self._execute_remote_command(cmd)
         np_img = np_img.transpose((1, 0, 2))
-        pil_img = pimg.fromarray(np_img)
-        cv2_image = np.array(pil_img)
-        cv2_image = cv2_image[:, :, ::-1].copy()
-        #pil_img.show()
-        return (np.asarray(pil_img), cv2_image)
+        np_img = np_img[:, :, ::-1]
+        return np_img
 
     def get_depth(self):
         cmd = {"name": "get_depth", "args": {}}
         np_img = self._execute_remote_command(cmd)
         np_img = np_img.transpose((1, 0))
         np_img = np_img * 100
-        pil_img = pimg.fromarray(np_img)
-        #pil_img.show()
-        return np.asarray(pil_img)
+        return np_img
 
     def get_instance_segmentation(self):
         cmd = {"name": "inst_seg", "args": {}}

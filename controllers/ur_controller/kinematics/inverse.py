@@ -200,8 +200,12 @@ class InverseKinematics(Kinematics):
 
         if not math.isnan(theta_1_1):
             solution.solution_shoulder_left = self.__compute_solution_for_theta_1(T06, theta_1_1, debug)
+        else:
+            solution.solution_shoulder_left = InverseKinematicsWristSolution().is_valid_solution = False
         if not math.isnan(theta_1_2):
             solution.solution_shoulder_right = self.__compute_solution_for_theta_1(T06, theta_1_2, debug)
+        else:
+            solution.solution_shoulder_right = InverseKinematicsWristSolution().is_valid_solution = False
 
         if debug:
             self.__print_all_solutions(solution)

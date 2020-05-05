@@ -34,13 +34,13 @@ class SimulationConnector:
         self.home_pose_l = [35, -300, 300, 0, 0, -0.8]
         self.home_pose = [-60, -60, -110, -100, 90, -60]
         # self.move_out_of_view_pose = [-350, -35, 300, 3.14, 0, 0]
-        self.move_out_of_view_pose = [-150, -60, -110, -100, 90, -60]
+        self.move_out_of_view_pose = [-150, -60, -110, 180, 0, 0]
         self.default_orientation = [0, 0, 0]
         self.gripper_tcp = [0, 0, 0.201, 2.9024, -1.2023, 0]
         self.fuse_tcp = [0.057, -0.00109, 0.13215, -1.7600, -0.7291, 1.7601]
         # self.suction_tcp_real = [-0.12, 0, 0.095, 0, -1.57, 0]
         #self.suction_tcp = [0, 0.18, 0.095, 1.57, 0, 0]
-        self.suction_tcp = [0, 0.193, 0.08, -np.pi/2, 0, 0]
+        self.suction_tcp = [-0.193, 0, 0.08, 0, -np.pi/2, 0]
         self.current_part_id = None
         self.grip_has_been_called_flag = False
         self.moved_to_camera_flag = False
@@ -306,8 +306,8 @@ if __name__ == '__main__':
     tmat = Utils.trans_and_rot_to_tmat(trans, rot)
     fkin.T6T = tmat
     T06 = fkin.convert_TBT_to_T06(TBT)
-    angles = ikin.get_best_solution_for_config_id(T06, 0)
-
+    angles = ikin.get_best_solution_for_config_id(T06, 5)
     connector.movej(angles, acc=2, vel=0.5, degrees=False)
+
 
     time.sleep(10)

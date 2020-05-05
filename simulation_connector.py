@@ -31,13 +31,14 @@ class SimulationConnector:
         self.home_pose_l = [35, -300, 300, 0, 0, -0.8]
         self.home_pose = [-60, -60, -110, -100, 90, -60]
         # self.move_out_of_view_pose = [-350, -35, 300, 3.14, 0, 0]
-        self.move_out_of_view_pose = [-150, -60, -110, -100, 90, -60]
+        self.move_out_of_view_pose = [-150, -60, -110, 180, 0, 0]
         self.default_orientation = [0, 0, 0]
-        self.gripper_tcp = [0, 0, 0.201, 2.9024, -1.2023, 0]
+        #self.gripper_tcp = [0, 0, 0.201, 2.9024, -1.2023, 0]
+        self.gripper_tcp = [0, 0, 0.201, 0, 0, 0]
         self.fuse_tcp = [0.057, -0.00109, 0.13215, -1.7600, -0.7291, 1.7601]
         # self.suction_tcp_real = [-0.12, 0, 0.095, 0, -1.57, 0]
         #self.suction_tcp = [0, 0.18, 0.095, 1.57, 0, 0]
-        self.suction_tcp = [0, 0.193, 0.08, -np.pi/2, 0, 0]
+        self.suction_tcp = [-0.193, 0, 0.08, 0, -np.pi/2, 0]
         self.current_part_id = None
         self.grip_has_been_called_flag = False
         self.moved_to_camera_flag = False
@@ -275,12 +276,27 @@ if __name__ == '__main__':
     fkin = ForwardKinematics()
     connector = SimulationConnector(2000)
     connector.move_out_of_view()
-    box = BoxDetector()
-    #img, cv2 = connector.get_image()
-    #box.get_average_pixel_value(cv2)
-    connector.move_box()
-
-
+    np_rgb_img = connector.get_image()
+    np_depth_img = connector.get_depth()
+    results = connector.get_instance_segmentation()
+    first_mask = results["instances"].pred_masks[0, ::].numpy().astype(np.uint8)
+    surface_normals = SurfaceNormals()
+    center, rotation_matrix = surface_normals.get_tool_orientation_matrix(first_mask, np_depth_img, np_rgb_img)
+    TBT = np.pad(rotation_matrix, ((0, 1), (0, 1)))
+    TBT[0, 3] = center[0] / 1000.0
+    TBT[1, 3] = center[1] / 1000.0
+    TBT[2, 3] = 0.3 # center[2] / 1000.0 + 0.2
+    TBT[3, 3] = 1
+    #connector.set_tcp(connector.suction_tcp)
+    pose = connector.suction_tcp
+    trans = [pose[0], pose[1], pose[2]]
+    rotvec = [pose[3], pose[4], pose[5]]
+    rot = Rotation.from_rotvec(rotvec)
+    tmat = Utils.trans_and_rot_to_tmat(trans, rot)
+    fkin.T6T = tmat
+    T06 = fkin.convert_TBT_to_T06(TBT)
+    angles = ikin.get_best_solution_for_config_id(T06, 5)
+    connector.movej(angles, acc=2, vel=0.5, degrees=False)
 
 
     time.sleep(10)

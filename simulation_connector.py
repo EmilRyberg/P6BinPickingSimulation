@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append('controllers/ur_controller')
 sys.path.append('controllers/ur_controller/P6BinPicking')
 
@@ -93,7 +94,7 @@ class SimulationConnector:
 
         self.pcb_singularity_avoidance = [-70, -70, -107, -180, -147, 90]
 
-        self.cover_finger_0 = 0.004 #positions for gripper motors
+        self.cover_finger_0 = 0.004  # positions for gripper motors
         self.cover_finger_1 = 0.006
         self.cover_grasped = -0.005
         self.box_finger_0 = 0.005
@@ -200,7 +201,7 @@ class SimulationConnector:
         self._execute_remote_command(cmd)
 
     def grasp_cover(self):
-        self.close_gripper(self.cover_finger_0,self.cover_finger_1,self.cover_grasped)
+        self.close_gripper(self.cover_finger_0, self.cover_finger_1, self.cover_grasped)
 
     def grasp_box(self):
         self.close_gripper(self.box_finger_0, self.box_finger_1, self.box_grasped)
@@ -237,23 +238,34 @@ class SimulationConnector:
         return results
 
     def move_box(self):
-        pil,image = self.get_image()
-        #cv2.imshow("box_image", image)
-        #cv2.waitKey()
-        grasp_location, angle = self.box_detector.box_grasp_location(image,pil)
+        image = self.get_image()
+        pil = image[:, :, ::-1]
+        pil = pimg.fromarray(pil)
+        # cv2.imshow("box_image", image)
+        # cv2.waitKey()
+        grasp_location, angle = self.box_detector.box_grasp_location(image, pil)
         self.set_tcp(self.gripper_tcp)
         self.move_to_home()
-        self.movel([grasp_location[0], grasp_location[1], grasp_location[2]+20, 0, 0, 3.14-angle])
-        self.movel([grasp_location[0], grasp_location[1], grasp_location[2]-80, 0, 0, 3.14-angle])
+        self.movel([grasp_location[0], grasp_location[1], grasp_location[2] + 20, 0, 0, 3.14 - angle])
+        self.movel([grasp_location[0], grasp_location[1], grasp_location[2] - 80, 0, 0, 3.14 - angle])
         self.grasp_box()
         if self.first_box_move == 0:
             self.movel([grasp_location[0] + 15, grasp_location[1] + 15, grasp_location[2] + 20, 0, 0, 3.14])
             self.first_box_move = 1
         else:
-            self.movel([grasp_location[0]-15, grasp_location[1]-15, grasp_location[2]+20, 0, 0, 3.14])
+            self.movel([grasp_location[0] - 15, grasp_location[1] - 15, grasp_location[2] + 20, 0, 0, 3.14])
             self.first_box_move = 0
         self.open_gripper()
-        #print(grasp_location)
+        # print(grasp_location)
+
+    def check_suction_success(self):
+        cmd = {"name": "suction_check", "args": {}}
+        locked = self._execute_remote_command(cmd)
+        print("isLocked = ", locked)
+        if locked:
+            return True
+        elif not locked:
+            return False
 
 
 def angle_axis_to_rotation_matrix(angle_axis):
@@ -276,27 +288,13 @@ if __name__ == '__main__':
     fkin = ForwardKinematics()
     connector = SimulationConnector(2000)
     connector.move_out_of_view()
-    np_rgb_img = connector.get_image()
-    np_depth_img = connector.get_depth()
-    results = connector.get_instance_segmentation()
-    first_mask = results["instances"].pred_masks[0, ::].numpy().astype(np.uint8)
-    surface_normals = SurfaceNormals()
-    center, rotation_matrix = surface_normals.get_tool_orientation_matrix(first_mask, np_depth_img, np_rgb_img)
-    TBT = np.pad(rotation_matrix, ((0, 1), (0, 1)))
-    TBT[0, 3] = center[0] / 1000.0
-    TBT[1, 3] = center[1] / 1000.0
-    TBT[2, 3] = 0.3 # center[2] / 1000.0 + 0.2
-    TBT[3, 3] = 1
+    box = BoxDetector()
+    #connector.move_to_home()
     #connector.set_tcp(connector.suction_tcp)
-    pose = connector.suction_tcp
-    trans = [pose[0], pose[1], pose[2]]
-    rotvec = [pose[3], pose[4], pose[5]]
-    rot = Rotation.from_rotvec(rotvec)
-    tmat = Utils.trans_and_rot_to_tmat(trans, rot)
-    fkin.T6T = tmat
-    T06 = fkin.convert_TBT_to_T06(TBT)
-    angles = ikin.get_best_solution_for_config_id(T06, 5)
-    connector.movej(angles, acc=2, vel=0.5, degrees=False)
-
+    #connector.movel([35, -300, 50, 0, 0, -0.8])
+    #connector.check_suction_success()
+    # img, cv2 = connector.get_image()
+    # box.get_average_pixel_value(cv2)
+    connector.move_box()
 
     time.sleep(10)

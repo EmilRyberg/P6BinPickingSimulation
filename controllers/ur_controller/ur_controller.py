@@ -2,6 +2,7 @@
 
 from controller import Robot
 from controller import Connector
+from controller import Supervisor
 from controller import RangeFinder
 from controller import Camera
 import numpy as np
@@ -61,7 +62,7 @@ def respond(result, data = None):
     send_msg(pickle.dumps(cmd))
 
 
-robot = Robot()
+robot = Supervisor()
 suction = Connector("suction")
 cameraRGB = robot.getCamera("cameraRGB")
 cameraDepth = robot.getRangeFinder("cameraDepth")
@@ -76,6 +77,19 @@ motor_sensors = [robot.getPositionSensor("shoulder_pan_joint_sensor"), robot.get
 
 finger_motors = [robot.getMotor("right_finger_motor"), robot.getMotor("left_finger_motor")]
 finger_sensors = [robot.getPositionSensor("right_finger_sensor"), robot.getPositionSensor("left_finger_sensor")]
+
+phone_part_objects = [
+    robot.getFromDef('Bottom_Cover'),
+    robot.getFromDef('Bottom_Cover_2'),
+    robot.getFromDef('White_Cover'),
+    robot.getFromDef('White_Cover_2'),
+    robot.getFromDef('Black_Cover'),
+    robot.getFromDef('Black_Cover_2'),
+    robot.getFromDef('Blue_Cover'),
+    robot.getFromDef('Blue_Cover_2'),
+    robot.getFromDef('PCB'),
+    robot.getFromDef('PCB_2')
+]
 
 for sensor in motor_sensors:
     sensor.enable(10)
@@ -231,6 +245,18 @@ while robot.step(timestep) != -1:
         fkin.T6T = tmat
         current_task = "idle"
         respond("done")
+
+    elif current_task == "suction_check":
+        for part in phone_part_objects:
+            children = part.getField('children')
+            connector = children.getMFNode(0)
+            is_locked = connector.getField('isLocked')
+            if is_locked == "TRUE":
+                current_task = "idle"
+                respond("done", True)
+                break
+        current_task = "idle"
+        respond("done", False)
 
     elif current_task == "get_image":
         if not rgb_enabled:

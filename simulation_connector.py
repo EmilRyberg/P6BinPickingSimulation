@@ -1,6 +1,6 @@
 import sys
-sys.path.append('controllers/ur_controller')
-sys.path.append('controllers/ur_controller/P6BinPicking')
+#sys.path.append('controllers/ur_controller')
+#sys.path.append('controllers/ur_controller/P6BinPicking')
 
 import numpy as np
 import threading
@@ -17,7 +17,7 @@ from scipy.spatial.transform import Rotation
 
 from controllers.ur_controller.kinematics.forward import ForwardKinematics
 from controllers.ur_controller.kinematics.inverse import InverseKinematics
-from controllers.ur_controller.utils import Utils
+from controllers.ur_controller.ur_utils import Utils
 
 
 class SimulationConnector:
@@ -93,12 +93,14 @@ class SimulationConnector:
 
         self.pcb_singularity_avoidance = [-70, -70, -107, -180, -147, 90]
 
-        self.cover_finger_0 = 0.004 #positions for gripper motors
-        self.cover_finger_1 = 0.006
-        self.cover_grasped = -0.005
-        self.box_finger_0 = 0.005
-        self.box_finger_1 = 0.012
-        self.box_grasped = -0.005
+        self.cover_closed = 20
+        #self.cover_finger_0 = 0.004 #positions for gripper motors
+        #self.cover_finger_1 = 0.006
+        #self.cover_grasped = -0.005
+        self.box_closed = 5
+        #self.box_finger_0 = 0.005
+        #self.box_finger_1 = 0.012
+        #self.box_grasped = -0.005
         self.first_box_move = 0
 
     def __del__(self):
@@ -188,22 +190,21 @@ class SimulationConnector:
     def move_out_of_view(self, speed=1.0):
         self.movej(self.move_out_of_view_pose, acc=1.0, vel=speed)
 
-    def open_gripper(self, width=100):
+    def open_gripper(self):
         cmd = {"name": "open_gripper", "args": {}}
         self._execute_remote_command(cmd)
 
-    def close_gripper(self, finger_0_position, finger_1_position, closed_threshold):
-        cmd = {"name": "close_gripper", "args": {}}
-        cmd["args"]["finger_0"] = finger_0_position
-        cmd["args"]["finger_1"] = finger_1_position
-        cmd["args"]["closed"] = closed_threshold
+    def close_gripper(self, width=0):
+        cmd = {"name": "close_gripper", "args": {
+            "width": width
+        }}
         self._execute_remote_command(cmd)
 
     def grasp_cover(self):
-        self.close_gripper(self.cover_finger_0,self.cover_finger_1,self.cover_grasped)
+        self.close_gripper(self.cover_closed)
 
     def grasp_box(self):
-        self.close_gripper(self.box_finger_0, self.box_finger_1, self.box_grasped)
+        self.close_gripper(self.box_closed)
 
     def move_gripper(self, width):
         # WIP
@@ -237,10 +238,10 @@ class SimulationConnector:
         return results
 
     def move_box(self):
-        pil,image = self.get_image()
+        image = self.get_image()
         #cv2.imshow("box_image", image)
         #cv2.waitKey()
-        grasp_location, angle = self.box_detector.box_grasp_location(image,pil)
+        grasp_location, angle = self.box_detector.box_grasp_location(image)
         self.set_tcp(self.gripper_tcp)
         self.move_to_home()
         self.movel([grasp_location[0], grasp_location[1], grasp_location[2]+20, 0, 0, 3.14-angle])
@@ -254,6 +255,11 @@ class SimulationConnector:
             self.first_box_move = 0
         self.open_gripper()
         #print(grasp_location)
+
+    def get_gripper_distance(self):
+        cmd = {"name": "finger_displacement", "args": {}}
+        distance = self._execute_remote_command(cmd)
+        return distance
 
 
 def angle_axis_to_rotation_matrix(angle_axis):
@@ -272,31 +278,11 @@ def angle_axis_to_rotation_matrix(angle_axis):
 
 
 if __name__ == '__main__':
-    ikin = InverseKinematics()
-    fkin = ForwardKinematics()
     connector = SimulationConnector(2000)
-    connector.move_out_of_view()
-    np_rgb_img = connector.get_image()
-    np_depth_img = connector.get_depth()
-    results = connector.get_instance_segmentation()
-    first_mask = results["instances"].pred_masks[0, ::].numpy().astype(np.uint8)
-    surface_normals = SurfaceNormals()
-    center, rotation_matrix = surface_normals.get_tool_orientation_matrix(first_mask, np_depth_img, np_rgb_img)
-    TBT = np.pad(rotation_matrix, ((0, 1), (0, 1)))
-    TBT[0, 3] = center[0] / 1000.0
-    TBT[1, 3] = center[1] / 1000.0
-    TBT[2, 3] = 0.3 # center[2] / 1000.0 + 0.2
-    TBT[3, 3] = 1
-    #connector.set_tcp(connector.suction_tcp)
-    pose = connector.suction_tcp
-    trans = [pose[0], pose[1], pose[2]]
-    rotvec = [pose[3], pose[4], pose[5]]
-    rot = Rotation.from_rotvec(rotvec)
-    tmat = Utils.trans_and_rot_to_tmat(trans, rot)
-    fkin.T6T = tmat
-    T06 = fkin.convert_TBT_to_T06(TBT)
-    angles = ikin.get_best_solution_for_config_id(T06, 5)
-    connector.movej(angles, acc=2, vel=0.5, degrees=False)
-
+    connector.get_gripper_distance()
+    connector.close_gripper(0)
+    connector.get_gripper_distance()
+    connector.close_gripper(80)
+    connector.get_gripper_distance()
 
     time.sleep(10)

@@ -1,6 +1,6 @@
 import sys
-sys.path.append('controllers/ur_controller')
-sys.path.append('controllers/ur_controller/P6BinPicking')
+#sys.path.append('controllers/ur_controller')
+#sys.path.append('controllers/ur_controller/P6BinPicking')
 
 import numpy as np
 import threading
@@ -17,7 +17,7 @@ from scipy.spatial.transform import Rotation
 
 from controllers.ur_controller.kinematics.forward import ForwardKinematics
 from controllers.ur_controller.kinematics.inverse import InverseKinematics
-from controllers.ur_controller.utils import Utils
+from controllers.ur_controller.ur_utils import Utils
 
 
 class SimulationConnector:
@@ -93,11 +93,11 @@ class SimulationConnector:
 
         self.pcb_singularity_avoidance = [-70, -70, -107, -180, -147, 90]
 
-        self.cover_closed = 60
+        self.cover_closed = 20
         #self.cover_finger_0 = 0.004 #positions for gripper motors
         #self.cover_finger_1 = 0.006
         #self.cover_grasped = -0.005
-        self.box_closed = 75
+        self.box_closed = 5
         #self.box_finger_0 = 0.005
         #self.box_finger_1 = 0.012
         #self.box_grasped = -0.005
@@ -238,10 +238,10 @@ class SimulationConnector:
         return results
 
     def move_box(self):
-        pil,image = self.get_image()
+        image = self.get_image()
         #cv2.imshow("box_image", image)
         #cv2.waitKey()
-        grasp_location, angle = self.box_detector.box_grasp_location(image,pil)
+        grasp_location, angle = self.box_detector.box_grasp_location(image)
         self.set_tcp(self.gripper_tcp)
         self.move_to_home()
         self.movel([grasp_location[0], grasp_location[1], grasp_location[2]+20, 0, 0, 3.14-angle])
@@ -258,7 +258,8 @@ class SimulationConnector:
 
     def get_gripper_distance(self):
         cmd = {"name": "finger_displacement", "args": {}}
-        self._execute_remote_command(cmd)
+        distance = self._execute_remote_command(cmd)
+        return distance
 
 
 def angle_axis_to_rotation_matrix(angle_axis):

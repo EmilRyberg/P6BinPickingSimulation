@@ -8,7 +8,7 @@ import numpy as np
 from kinematics.inverse import InverseKinematics
 from kinematics.forward import ForwardKinematics
 from trajectory import Trajectory
-from utils import Utils
+from ur_utils import Utils
 from scipy.spatial.transform import Rotation
 import socket
 import time
@@ -264,6 +264,7 @@ while robot.step(timestep) != -1:
         else:
             np_img = np.array(cameraRGB.getImageArray(), dtype=np.uint8)
             np_img = np_img.transpose((1, 0, 2))
+            np_img = np_img[:, :, ::-1]  # BGR ordering
             results = instance_detector.predict(np_img)
             respond("done", results)
             current_task = "idle"

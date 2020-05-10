@@ -8,7 +8,7 @@ import numpy as np
 from kinematics.inverse import InverseKinematics
 from kinematics.forward import ForwardKinematics
 from trajectory import Trajectory
-from utils import Utils
+from rotation_helper import Utils
 from scipy.spatial.transform import Rotation
 import socket
 import time
@@ -104,7 +104,7 @@ command_is_executing = False
 print_once_flag = True
 rgb_enabled = False
 depth_enabled = False
-instance_detector = InstanceDetector("model_final_sim.pth")
+#instance_detector = InstanceDetector("model_final_sim.pth")
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(('localhost', 2000))
@@ -208,9 +208,13 @@ while robot.step(timestep) != -1:
             for i in range(6):
                 motors[i].setPosition(angles[i])
             if trajectory.is_done:
-                command_is_executing = False
-                current_task = "idle"
-                respond("done")
+                diff = 0
+                for i in range(6):
+                    diff += abs(angles[i] - motor_sensors[i].getValue())
+                if diff < 0.1:
+                    command_is_executing = False
+                    current_task = "idle"
+                    respond("done")
     elif current_task == "getl":
         thetas = [0]*6
         for i in range(6):

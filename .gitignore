@@ -27,3 +27,5 @@ vision/*.avi
 *.zip
 
 *.pth
+
+__pycache__/

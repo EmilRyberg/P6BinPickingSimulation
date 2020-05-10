@@ -2,7 +2,7 @@ from kinematics.inverse import InverseKinematics
 from kinematics.forward import ForwardKinematics
 import numpy as np
 from scipy.spatial.transform import Rotation, Slerp
-from utils import Utils
+from rotation_helper import Utils
 
 
 class Trajectory:
@@ -46,6 +46,7 @@ class Trajectory:
         if self.total_steps == 0:
             self.total_steps = 1 # if the robot is already there execute 1 step with no move
         self.config_id = self.ikin.get_current_configuration_id(self.joint_angles)
+        print(f"current config ID: {self.config_id}")
         self.last_computed_angles = self._get_joint_angles()
 
         Utils.print_tmat(transformation_matrix, "start")
@@ -81,9 +82,9 @@ class Trajectory:
                     print("computed, last computed")
                     print(computed_angles_copy)
                     print(self.last_computed_angles)
-                    raise Exception("something went wrong")
+                    raise Exception("Something went wrong, probably singularity")
             #print(computed_angles)
             self.last_computed_angles = computed_angles
             return computed_angles
         else:
-            raise Exception("the current trajectory is already finished")
+            return self.last_computed_angles

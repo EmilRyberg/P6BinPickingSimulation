@@ -2,7 +2,7 @@ from kinematics.inverse import InverseKinematics
 from kinematics.forward import ForwardKinematics
 import numpy as np
 from scipy.spatial.transform import Rotation, Slerp
-from rotation_helper import Utils
+from ur_utils import Utils
 
 
 class Trajectory:

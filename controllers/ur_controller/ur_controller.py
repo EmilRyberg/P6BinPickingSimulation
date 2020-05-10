@@ -8,7 +8,7 @@ import numpy as np
 from kinematics.inverse import InverseKinematics
 from kinematics.forward import ForwardKinematics
 from trajectory import Trajectory
-from rotation_helper import Utils
+from ur_utils import Utils
 from scipy.spatial.transform import Rotation
 import socket
 import time
@@ -66,7 +66,6 @@ suction = Connector("suction")
 cameraRGB = robot.getCamera("cameraRGB")
 cameraDepth = robot.getRangeFinder("cameraDepth")
 
-
 timestep = int(robot.getBasicTimeStep())
 
 motors = [robot.getMotor("shoulder_pan_joint"), robot.getMotor("shoulder_lift_joint"), robot.getMotor("elbow_joint"),
@@ -76,8 +75,14 @@ motor_sensors = [robot.getPositionSensor("shoulder_pan_joint_sensor"), robot.get
 
 finger_motors = [robot.getMotor("right_finger_motor"), robot.getMotor("left_finger_motor")]
 finger_sensors = [robot.getPositionSensor("right_finger_sensor"), robot.getPositionSensor("left_finger_sensor")]
+FINGER_CLOSED_POSITION = [0.005, 0.005]  # right, left
+FINGER_OPEN_POSITION = [-0.035, 0.045]  # right, left
+MAX_FINGER_DISTANCE = 80  # mm abs open pos
+CLOSED_FINGER_DISTANCE = 10 # mm
 
 for sensor in motor_sensors:
+    sensor.enable(10)
+for sensor in finger_sensors:
     sensor.enable(10)
 """
 motors[0].setPosition(1.57)
@@ -110,7 +115,7 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(('localhost', 2000))
 server.listen()
 print("Waiting for connection")
-robot.step(1) # webots won't print without a step
+robot.step(10) # webots won't print without a step
 conn, addr = server.accept()
 #conn.settimeout(0.1)
 conn.setblocking(False)
@@ -140,7 +145,6 @@ while robot.step(timestep) != -1:
             args = cmd["args"]
             print("Executing: " + current_task + " " + str(args))
             print_once_flag = True
-
     elif current_task == "movej":
         if not command_is_executing:
             for i in range(6):
@@ -165,36 +169,39 @@ while robot.step(timestep) != -1:
         current_task = "idle"
         respond("done")
     elif current_task == "close_gripper":
-        finger_motors[1].setVelocity(5)
-        finger_motors[1].setPosition(args["finger_1"])
-        finger_motors[0].setVelocity(5)
-        finger_motors[0].setPosition(args["finger_0"])
-        finger_sensors[0].enable(1)
-        for i in range(500):
-            print(finger_sensors[0].getValue())
+        width = args["width"]
+        if width > MAX_FINGER_DISTANCE:
+            print(f'WARNING: Width over max distance of {width}mm. Clamping value')
+            width = MAX_FINGER_DISTANCE
+        elif width < 0:
+            print('WARNING: Width under min distance of 0mm. Clamping value')
+            width = 0
+        percent_closed = (MAX_FINGER_DISTANCE - width) / MAX_FINGER_DISTANCE
+        right_finger_position = FINGER_OPEN_POSITION[0] - (FINGER_OPEN_POSITION[0] - FINGER_CLOSED_POSITION[0]) * percent_closed
+        left_finger_position = FINGER_OPEN_POSITION[1] - (FINGER_OPEN_POSITION[1] - FINGER_CLOSED_POSITION[1]) * percent_closed
+        if not command_is_executing:
             command_is_executing = True
-            if finger_sensors[0].getValue()+0.0005>=args["closed"]:
+            finger_motors[1].setVelocity(5)
+            finger_motors[1].setPosition(left_finger_position)
+            finger_motors[0].setVelocity(5)
+            finger_motors[0].setPosition(right_finger_position)
+        else:
+            if finger_sensors[0].getValue() - 0.0001 <= right_finger_position <= finger_sensors[0].getValue() + 0.0001:
                 command_is_executing = False
-                continue
-            robot.step(1)
-        finger_sensors[0].disable()
-        current_task = "idle"
-        respond("done")
+                current_task = "idle"
+                respond("done")
     elif current_task == "open_gripper":
-        finger_motors[1].setVelocity(5)
-        finger_motors[1].setPosition(0.045)
-        finger_motors[0].setVelocity(5)
-        finger_motors[0].setPosition(-0.035)
-        finger_sensors[0].enable(1)
-        for i in range(1000):
-            print(finger_sensors[0].getValue())
+        if not command_is_executing:
             command_is_executing = True
-            if -0.35<=finger_sensors[0].getValue():
-                continue
-            robot.step(1)
-        finger_sensors[0].disable()
-        current_task = "idle"
-        respond("done")
+            finger_motors[1].setVelocity(5)
+            finger_motors[1].setPosition(FINGER_OPEN_POSITION[1])
+            finger_motors[0].setVelocity(5)
+            finger_motors[0].setPosition(FINGER_OPEN_POSITION[0])
+        else:
+            if finger_sensors[0].getValue() - 0.0001 <= FINGER_OPEN_POSITION[1] <= finger_sensors[0].getValue() + 0.0001:
+                command_is_executing = False
+                current_task = "idle"
+                respond("done")
     elif current_task == "movel":
         for i in range(6):
             motors[i].setVelocity(3)
@@ -225,7 +232,6 @@ while robot.step(timestep) != -1:
         pose = [trans[0], trans[1], trans[2], rotvec[0], rotvec[1], rotvec[2]]
         respond("done", pose)
         current_task = "idle"
-
     elif current_task == "set_tcp":
         pose = args["pose"]
         trans = [pose[0], pose[1], pose[2]]
@@ -235,7 +241,6 @@ while robot.step(timestep) != -1:
         fkin.T6T = tmat
         current_task = "idle"
         respond("done")
-
     elif current_task == "get_image":
         if not rgb_enabled:
             cameraRGB.enable(timestep)
@@ -246,7 +251,6 @@ while robot.step(timestep) != -1:
             current_task = "idle"
             cameraRGB.disable()
             rgb_enabled = False
-
     elif current_task == "get_depth":
         if not depth_enabled:
             cameraDepth.enable(timestep)
@@ -264,11 +268,19 @@ while robot.step(timestep) != -1:
         else:
             np_img = np.array(cameraRGB.getImageArray(), dtype=np.uint8)
             np_img = np_img.transpose((1, 0, 2))
+            np_img = np_img[:, :, ::-1]  # BGR ordering
             results = instance_detector.predict(np_img)
             respond("done", results)
             current_task = "idle"
             cameraRGB.disable()
             rgb_enabled = False
+    elif current_task == "finger_displacement":
+        right_finger_position = finger_sensors[0].getValue()
+        left_finger_position = finger_sensors[1].getValue()
+        distance = np.abs(right_finger_position - left_finger_position)
+        print(f"Right finger: {right_finger_position}, left finger: {left_finger_position}, distance: {distance}m")
+        respond("done", distance)
+        current_task = "idle"
     else:
         respond("Unknown command: " + current_task)
         raise Exception("Received unknown command: " + current_task)

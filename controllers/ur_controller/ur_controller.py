@@ -109,6 +109,7 @@ command_is_executing = False
 print_once_flag = True
 rgb_enabled = False
 depth_enabled = False
+gripper_timeout_timer = "paused"
 #instance_detector = InstanceDetector("model_final_sim.pth")
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -169,9 +170,12 @@ while robot.step(timestep) != -1:
         current_task = "idle"
         respond("done")
     elif current_task == "close_gripper":
+        if gripper_timeout_timer == "paused":
+            gripper_timeout_timer = 1000
+        gripper_timeout_timer -= timestep
         width = args["width"]
         if width > MAX_FINGER_DISTANCE:
-            print(f'WARNING: Width over max distance of {width}mm. Clamping value')
+            print(f'WARNING: Width over max distance of {MAX_FINGER_DISTANCE}mm. Clamping value')
             width = MAX_FINGER_DISTANCE
         elif width < 0:
             print('WARNING: Width under min distance of 0mm. Clamping value')
@@ -186,11 +190,15 @@ while robot.step(timestep) != -1:
             finger_motors[0].setVelocity(5)
             finger_motors[0].setPosition(right_finger_position)
         else:
-            if finger_sensors[0].getValue() - 0.0001 <= right_finger_position <= finger_sensors[0].getValue() + 0.0001:
+            if finger_sensors[0].getValue() - 0.0001 <= right_finger_position <= finger_sensors[0].getValue() + 0.0001 or gripper_timeout_timer < 0:
                 command_is_executing = False
                 current_task = "idle"
                 respond("done")
+                gripper_timeout_timer = "paused"
     elif current_task == "open_gripper":
+        if gripper_timeout_timer == "paused":
+            gripper_timeout_timer = 1000
+        gripper_timeout_timer -= timestep
         if not command_is_executing:
             command_is_executing = True
             finger_motors[1].setVelocity(5)
@@ -198,7 +206,7 @@ while robot.step(timestep) != -1:
             finger_motors[0].setVelocity(5)
             finger_motors[0].setPosition(FINGER_OPEN_POSITION[0])
         else:
-            if finger_sensors[0].getValue() - 0.0001 <= FINGER_OPEN_POSITION[1] <= finger_sensors[0].getValue() + 0.0001:
+            if finger_sensors[0].getValue() - 0.0001 <= FINGER_OPEN_POSITION[1] <= finger_sensors[0].getValue() + 0.0001 or gripper_timeout_timer < 0:
                 command_is_executing = False
                 current_task = "idle"
                 respond("done")

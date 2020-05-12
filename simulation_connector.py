@@ -44,11 +44,11 @@ class SimulationConnector:
         #self.cover_finger_0 = 0.004 #positions for gripper motors
         #self.cover_finger_1 = 0.006
         #self.cover_grasped = -0.005
-        self.box_closed = 5
+        self.box_closed = 3
         #self.box_finger_0 = 0.005
         #self.box_finger_1 = 0.012
         #self.box_grasped = -0.005
-        self.first_box_move = 0
+
 
     def __del__(self):
         self.conn.close()
@@ -184,25 +184,6 @@ class SimulationConnector:
         results = self._execute_remote_command(cmd)
         return results
 
-    def move_box(self):
-        image = self.get_image()
-        #cv2.imshow("box_image", image)
-        #cv2.waitKey()
-        grasp_location, angle = self.box_detector.box_grasp_location(image)
-        self.set_tcp(self.gripper_tcp)
-        self.move_to_home()
-        self.movel([grasp_location[0], grasp_location[1], grasp_location[2]+20, 0, 0, 3.14-angle])
-        self.movel([grasp_location[0], grasp_location[1], grasp_location[2]-80, 0, 0, 3.14-angle])
-        self.grasp_box()
-        if self.first_box_move == 0:
-            self.movel([grasp_location[0] + 15, grasp_location[1] + 15, grasp_location[2] + 20, 0, 0, 3.14])
-            self.first_box_move = 1
-        else:
-            self.movel([grasp_location[0]-15, grasp_location[1]-15, grasp_location[2]+20, 0, 0, 3.14])
-            self.first_box_move = 0
-        self.open_gripper()
-        #print(grasp_location)
-
     def get_gripper_distance(self):
         cmd = {"name": "finger_displacement", "args": {}}
         distance = self._execute_remote_command(cmd)
@@ -226,10 +207,10 @@ def angle_axis_to_rotation_matrix(angle_axis):
 
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
-    connector.get_gripper_distance()
-    connector.close_gripper(0)
-    connector.get_gripper_distance()
-    connector.close_gripper(80)
-    connector.get_gripper_distance()
+    connector.move_to_home()
+    connector.set_tcp(connector.suction_tcp)
+    connector.movel([0, -300, 300, 0, 3.14, 0], vel=0.8)
+    connector.movel([0, -300, 300, 2.70612374 , 1.13252521 ,-0.54265536], vel=0.4)
+    connector.movel([0, -300, 300, -2.12703317 ,-2.22415744 , 0.61830546], vel=0.4)
 
     time.sleep(10)

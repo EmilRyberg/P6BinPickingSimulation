@@ -174,6 +174,7 @@ while robot.step(timestep) != -1:
             gripper_timeout_timer = 1000
         gripper_timeout_timer -= timestep
         width = args["width"]
+        speed = args["speed"]
         if width > MAX_FINGER_DISTANCE:
             print(f'WARNING: Width over max distance of {MAX_FINGER_DISTANCE}mm. Clamping value')
             width = MAX_FINGER_DISTANCE
@@ -185,9 +186,9 @@ while robot.step(timestep) != -1:
         left_finger_position = FINGER_OPEN_POSITION[1] - (FINGER_OPEN_POSITION[1] - FINGER_CLOSED_POSITION[1]) * percent_closed
         if not command_is_executing:
             command_is_executing = True
-            finger_motors[1].setVelocity(5)
+            finger_motors[1].setVelocity(speed)
             finger_motors[1].setPosition(left_finger_position)
-            finger_motors[0].setVelocity(5)
+            finger_motors[0].setVelocity(speed)
             finger_motors[0].setPosition(right_finger_position)
         else:
             if finger_sensors[0].getValue() - 0.0001 <= right_finger_position <= finger_sensors[0].getValue() + 0.0001 or gripper_timeout_timer < 0:

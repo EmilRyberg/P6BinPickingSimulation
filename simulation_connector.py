@@ -141,9 +141,10 @@ class SimulationConnector:
         cmd = {"name": "open_gripper", "args": {}}
         self._execute_remote_command(cmd)
 
-    def close_gripper(self, width=0):
+    def close_gripper(self, width=0, speed=5):
         cmd = {"name": "close_gripper", "args": {
-            "width": width
+            "width": width,
+            "speed": speed
         }}
         self._execute_remote_command(cmd)
 

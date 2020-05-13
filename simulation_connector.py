@@ -29,8 +29,10 @@ class SimulationConnector:
         self.box_detector = BoxDetector()
         self.suction_enable_pin = 6
         self.home_pose_l = [35, -300, 300, 0, 0, -0.8]
-        self.home_pose = [-60, -60, -110, -100, 90, -60]
-        self.move_out_of_view_pose = [-150, -60, -110, -100, 90, -60]
+        #self.home_pose = [-60, -60, -110, -100, 90, -60]
+        self.home_pose = [-60, -60, -110, -190, -70, 100]
+        #self.move_out_of_view_pose = [-150, -60, -110, -100, 90, -60]
+        self.move_out_of_view_pose = [-150, -60, -110, -190, -70, 100]
         self.default_orientation = [0, 0, 0]
         self.gripper_tcp = [0, 0, 0.201, 0, 0, 0]
         self.suction_tcp = [-0.193, 0, 0.08, 0, -np.pi/2, 0]
@@ -112,6 +114,9 @@ class SimulationConnector:
         cmd["args"]["coords"] = pose_local
         cmd["args"]["speed"] = vel
         self._execute_remote_command(cmd)
+
+    def movel2(self, location, orientation, acc=1.0, vel=0.2, wait=None):
+        self.movel(np.concatenate((location, orientation)), acc=acc, vel=vel, wait=wait)
 
     def set_tcp(self, pose):
         cmd = {"name": "set_tcp", "args": {"pose": pose}}
@@ -209,8 +214,9 @@ if __name__ == '__main__':
     connector = SimulationConnector(2000)
     connector.move_to_home()
     connector.set_tcp(connector.suction_tcp)
-    connector.movel([0, -300, 300, 0, 3.14, 0], vel=0.8)
-    connector.movel([0, -300, 300, 2.70612374 , 1.13252521 ,-0.54265536], vel=0.4)
-    connector.movel([0, -300, 300, -2.12703317 ,-2.22415744 , 0.61830546], vel=0.4)
+    connector.movej([-60, -60, -110, -190, -70, 100], vel=3)
+
+    #connector.movel([0, -300, 300, 0, 3.14, 0], vel=0.8)
+
 
     time.sleep(10)

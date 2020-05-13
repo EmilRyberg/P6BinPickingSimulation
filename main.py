@@ -8,7 +8,7 @@ from simulation_camera_interface import SimulationCamera
 
 
 if __name__ == "__main__":
-    connector = SimulationConnector(2001)
+    connector = SimulationConnector(2000)
     camera = SimulationCamera(connector)
-    controller = Controller(connector, camera)
-    controller.main_flow(1)
+    controller = Controller(connector, camera, "model_final_sim.pth")
+    controller.main_flow(1, True)

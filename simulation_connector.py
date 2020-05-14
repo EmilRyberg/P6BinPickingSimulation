@@ -87,7 +87,7 @@ class SimulationConnector:
         if response["result"] != "done":
             raise Exception("Unexpected response: " + response["result"])
         else:
-            print("cmd done")
+            print(f"remote command {command['name']} done")
         return response["data"]
 
     def movej(self, pose, acc=1.0, vel=0.1, degrees=True, wait=None):
@@ -105,7 +105,7 @@ class SimulationConnector:
 
     def movel(self, pose, acc=1.0, vel=0.2, wait=None):
         pose_local = pose.copy()
-        print("goal pose in mm: ", pose_local)
+        #print("goal pose in mm: ", pose_local)
         pose_local[0] *= 0.001
         pose_local[1] *= 0.001
         pose_local[2] *= 0.001

@@ -51,6 +51,14 @@ class SimulationConnector:
         #self.box_finger_1 = 0.012
         #self.box_grasped = -0.005
 
+        #Part drop locations:
+        self.white_cover_drop = [350, -400, 100, 2.89, 1.21, 0]
+        self.black_cover_drop = [200, -250, 100, 2.89, 1.21, 0]
+        self.blue_cover_drop = [-50, -250, 100, 2.89, 1.21, 0]
+        self.bottom_cover_drop = [-150, -350, 100, 2.89, 1.21, 0]
+        self.pcb_drop = [-250, -450, 100, 2.89, 1.21, 0]
+
+
 
     def __del__(self):
         self.conn.close()
@@ -218,7 +226,18 @@ if __name__ == '__main__':
     connector = SimulationConnector(2000)
     connector.move_to_home_suction()
     connector.set_tcp(connector.suction_tcp)
-    connector.movej([-60, -60, -110, -190, -70, 100], vel=3)
+    connector.movel(connector.white_cover_drop, vel=0.4)
+    #connector.move_to_home()
+    connector.movel(connector.black_cover_drop, vel=0.4)
+    #connector.move_to_home()
+    connector.movel(connector.blue_cover_drop, vel=0.4)
+    #connector.move_to_home()
+    connector.movel(connector.bottom_cover_drop, vel=0.4)
+   #connector.move_to_home()
+    connector.movel(connector.pcb_drop, vel=0.4)
+    #print(connector.getl())
+    #connector.set_tcp(connector.suction_tcp)
+    #connector.movel(connector.white_cover_drop)
 
     #connector.movel([0, -300, 300, 0, 3.14, 0], vel=0.8)
 

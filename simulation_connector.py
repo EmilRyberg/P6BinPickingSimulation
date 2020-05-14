@@ -29,8 +29,8 @@ class SimulationConnector:
         self.box_detector = BoxDetector()
         self.suction_enable_pin = 6
         self.home_pose_l = [35, -300, 300, 0, 0, -0.8]
-        #self.home_pose = [-60, -60, -110, -100, 90, -60]
-        self.home_pose = [-60, -60, -110, -190, -70, 100]
+        self.home_pose_gripper = [-60, -60, -110, -100, 90, -60]
+        self.home_pose_suction = [-60, -60, -110, -190, -70, 100]
         #self.move_out_of_view_pose = [-150, -60, -110, -100, 90, -60]
         self.move_out_of_view_pose = [-150, -60, -110, -190, -70, 100]
         self.default_orientation = [0, 0, 0]
@@ -126,8 +126,11 @@ class SimulationConnector:
         cmd = {"name": "getl", "args": {}}
         return self._execute_remote_command(cmd)
 
-    def move_to_home(self, speed=1.0):
-        self.movej(self.home_pose, acc=1.0, vel=speed)
+    def move_to_home_suction(self, speed=1.0):
+        self.movej(self.home_pose_suction, acc=1.0, vel=speed)
+
+    def move_to_home_gripper(self, speed=1.0):
+        self.movej(self.home_pose_gripper, acc=1.0, vel=speed)
 
     def move_to_home_l(self, speed=1.0):
         self.movel(self.home_pose_l, acc=1.0, vel=speed)
@@ -213,7 +216,7 @@ def angle_axis_to_rotation_matrix(angle_axis):
 
 if __name__ == '__main__':
     connector = SimulationConnector(2000)
-    connector.move_to_home()
+    connector.move_to_home_suction()
     connector.set_tcp(connector.suction_tcp)
     connector.movej([-60, -60, -110, -190, -70, 100], vel=3)
 

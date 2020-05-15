@@ -228,6 +228,8 @@ while robot.step(timestep) != -1:
                 for i in range(6):
                     diff += abs(angles[i] - motor_sensors[i].getValue())
                 if diff < 0.1:
+                    for i in range(200):
+                        robot.step(timestep)
                     command_is_executing = False
                     current_task = "idle"
                     respond("done")

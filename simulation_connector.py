@@ -150,17 +150,19 @@ class SimulationConnector:
         else:
             self.movej(self.camera_pose_gripper, acc=1.0, vel=speed)
 
-    def move_out_of_view(self, speed=1.0):
+    def move_out_of_view(self, speed=3.0):
         self.movej(self.move_out_of_view_pose, acc=1.0, vel=speed)
 
     def open_gripper(self):
         cmd = {"name": "open_gripper", "args": {}}
         self._execute_remote_command(cmd)
 
-    def close_gripper(self, width=0, speed=5):
+    def close_gripper(self, width=0, speed=5, lock=False, gripping_box=False):
         cmd = {"name": "close_gripper", "args": {
             "width": width,
-            "speed": speed
+            "speed": speed,
+            "lock": lock,
+            "gripping_box": gripping_box
         }}
         self._execute_remote_command(cmd)
 
@@ -168,7 +170,7 @@ class SimulationConnector:
         self.close_gripper(self.cover_closed)
 
     def grasp_box(self):
-        self.close_gripper(self.box_closed)
+        self.close_gripper(self.box_closed, gripping_box=True)
 
     def move_gripper(self, width):
         # WIP

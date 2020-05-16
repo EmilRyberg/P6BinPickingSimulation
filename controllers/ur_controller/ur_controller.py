@@ -63,6 +63,8 @@ def respond(result, data = None):
 
 robot = Robot()
 suction = Connector("suction")
+gripper_connector = Connector("gripper_connector")
+gripper_connector_for_box = Connector("gripper_connector_for_box")
 cameraRGB = robot.getCamera("cameraRGB")
 cameraDepth = robot.getRangeFinder("cameraDepth")
 
@@ -175,6 +177,8 @@ while robot.step(timestep) != -1:
         gripper_timeout_timer -= timestep
         width = args["width"]
         speed = args["speed"]
+        lock = args["lock"]
+        gripping_box = args["gripping_box"]
         if width > MAX_FINGER_DISTANCE:
             print(f'WARNING: Width over max distance of {MAX_FINGER_DISTANCE}mm. Clamping value')
             width = MAX_FINGER_DISTANCE
@@ -192,11 +196,17 @@ while robot.step(timestep) != -1:
             finger_motors[0].setPosition(right_finger_position)
         else:
             if finger_sensors[0].getValue() - 0.0001 <= right_finger_position <= finger_sensors[0].getValue() + 0.0001 or gripper_timeout_timer < 0:
+                if lock:
+                    gripper_connector.lock()
+                if gripping_box:
+                    gripper_connector_for_box.lock()
                 command_is_executing = False
                 current_task = "idle"
                 respond("done")
                 gripper_timeout_timer = "paused"
     elif current_task == "open_gripper":
+        gripper_connector.unlock()
+        gripper_connector_for_box.unlock()
         if gripper_timeout_timer == "paused":
             gripper_timeout_timer = 1000
         gripper_timeout_timer -= timestep

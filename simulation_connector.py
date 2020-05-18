@@ -198,6 +198,10 @@ class SimulationConnector:
         np_img = np_img * 100
         return np_img
 
+    def remote_print(self, content):
+        cmd = {"name": "print", "args": {"content": content}}
+        self._execute_remote_command(cmd)
+
     def get_instance_segmentation(self):
         cmd = {"name": "inst_seg", "args": {}}
         results = self._execute_remote_command(cmd)

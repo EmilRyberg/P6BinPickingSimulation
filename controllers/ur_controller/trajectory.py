@@ -60,7 +60,7 @@ class Trajectory:
     def calculate_step(self):
         if not self.is_done:
             self.current_step += 1
-            if self.current_step % 25 == 0:
+            if self.current_step % 50 == 0:
                 print("step "+str(self.current_step)+"/"+str(self.total_steps))
             cart_pos = self.starting_cart_pos + (self.current_step / self.total_steps) * (self.goal_cart_pos - self.starting_cart_pos)
             r = self.slerp(self.current_step/self.total_steps)

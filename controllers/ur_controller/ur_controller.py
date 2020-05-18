@@ -173,7 +173,7 @@ while robot.step(timestep) != -1:
         respond("done")
     elif current_task == "close_gripper":
         if gripper_timeout_timer == "paused":
-            gripper_timeout_timer = 1000
+            gripper_timeout_timer = 600
         gripper_timeout_timer -= timestep
         width = args["width"]
         speed = args["speed"]
@@ -282,6 +282,10 @@ while robot.step(timestep) != -1:
             current_task = "idle"
             cameraDepth.disable()
             depth_enabled = False
+    elif current_task == "print":
+        print(f"remote message: {args['content']}")
+        respond("done")
+        current_task = "idle"
     elif current_task == "inst_seg":
         if not rgb_enabled:
             cameraRGB.enable(timestep)

@@ -20,19 +20,16 @@ The simulation software used is [Webots](https://cyberbotics.com/).
 ### Dependencies
 The libraries required to run all code in the repository are listed below:
 ```
-PIL
+pillow
 numpy
-opencv2 (cv2)
+opencv-python
+opencv-contrib-python
 imutils
-pyrealsense2
 scipy
-torch
-torchvision
-aruco
-h5py
+pytorch
 detectron2
 terminaltables
 matplotlib
-urx
-pickle
+pyrealsense2 (not needed from simulation)
+urx (not needed from simulation)
 ```

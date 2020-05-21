@@ -30,6 +30,6 @@ pytorch
 detectron2
 terminaltables
 matplotlib
-pyrealsense2 (not needed from simulation)
-urx (not needed from simulation)
+pyrealsense2 (not needed for simulation)
+urx (not needed for simulation)
 ```
